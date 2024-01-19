@@ -338,8 +338,6 @@ def plot_volcano(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True
     #         adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5), **kwargs)
     # _ = plot_volcano()
 
-
-
 def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True, FDR=None, tag_top=None, group1=None, group2=None):
     
     adata_copy = adata.copy()
@@ -400,3 +398,33 @@ def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=T
     plt.show()
 
     #TODO add 
+
+import plotly.express as px
+import plotly.graph_objects as go
+import scanpy as sc
+sc.settings.verbosity = 1
+
+def plot_boxplots_plotly(adata, x_axis="Phenotype_1", hover_data="Phenotype_2", color_column="Phenotype_1"):
+    
+    #create column called protein hits
+    adata_copy = adata.copy()
+    sc.pp.filter_cells(adata_copy, min_genes=1, inplace=True, copy=False)
+
+    df = pd.DataFrame(index=adata_copy.obs.index, data=adata_copy.obs.values, columns=adata_copy.obs_keys())
+
+
+    fig = px.box(df, x=x_axis, y='n_genes', 
+        points='all', hover_data=[hover_data],
+        # category_orders={"Celltype_sub": order_of_labels}, 
+        color=color_column, width=1000, height=800,
+        color_discrete_sequence=px.colors.qualitative.G10
+        )
+
+    fig.update_layout(
+        title='Protein groups measured for each celltype',
+        paper_bgcolor='rgb(255, 255, 255)',
+        plot_bgcolor='rgb(255, 255, 255)',
+        showlegend=True,   
+    )
+
+    fig.show()
