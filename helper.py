@@ -1,13 +1,19 @@
 import pandas as pd
 import numpy as np
 import tabulate
+import anndata as ad
 
 
-
-def DIANN_to_adata(DIANN_path:str, metadata_path:str, metadata_check=False):
+def DIANN_to_adata(DIANN_path:str,
+                DIANN_sep:str="\t",
+                metadata_path:str = None, 
+                metadata_sep:str="csv", 
+                metadata_check=False, 
+                sample_id_column:str="Name" ) -> ad.AnnData:
 
     """
     Created by Jose Nimo on 19.01.2024
+    Modified by Jose Nimo on 28.03.2024
 
     Description:
     Converts DIANN output file and metadata file into anndata object.
@@ -23,15 +29,25 @@ def DIANN_to_adata(DIANN_path:str, metadata_path:str, metadata_check=False):
     
     print("Step 1: Loading DIANN output file")
     #load DIANN output file
-    df = pd.read_csv(DIANN_path, sep="\t")
+    df = pd.read_csv(DIANN_path, sep=DIANN_sep)
     #all rows, all columns except first 5 to remove metadata
     rawdata = df.iloc[:,5:]
     rawdata = rawdata.transpose() #transpose to have samples as rows and proteins as columns
 
     print("Step 2: Loading metadata file")
-    sample_metadata = pd.read_csv(metadata_path, sep="\t") #load metadata file
-    sample_metadata.index = sample_metadata["Name"] #set index to be the sample name, matching the rawdata index
-    sample_metadata = sample_metadata.drop("Name", axis=1) #drop the name column, since it is now the index
+    sample_metadata = pd.read_csv(metadata_path, sep=metadata_sep) #load metadata file
+    
+    #check sample_id_column is in metadata 
+    if sample_id_column not in sample_metadata.columns:
+        print(f"ERROR: {sample_id_column} not found in metadata file. Please check your files.")
+        return None
+    # check if sample_id_column values are unique
+    if len(sample_metadata[sample_id_column].unique()) != sample_metadata.shape[0]:
+        print(f"ERROR: {sample_id_column} is not unique in metadata file. Please check your files.")
+
+
+    sample_metadata.index = sample_metadata[sample_id_column] #set index to be the sample name, matching the rawdata index
+    sample_metadata = sample_metadata.drop(sample_id_column, axis=1) #drop the name column, since it is now the index
 
     #check if metadata number matches rawdata number
     if rawdata.shape[0] != sample_metadata.shape[0]:
@@ -47,7 +63,7 @@ def DIANN_to_adata(DIANN_path:str, metadata_path:str, metadata_check=False):
         data_list = [(key, value) for key, value in categorical_values_dict.items()]
         # Print the dictionary in a tabular format
         print("Sample Metadata")
-        print(tabulate(data_list, headers=["Column Name", "Unique Values"], tablefmt="grid"))
+        print(tabulate.tabulate(data_list, headers=["Column Name", "Unique Values"], tablefmt="grid"))
         print("\n")
 
     print("Step 3: Loading protein metadata")

@@ -182,7 +182,7 @@ def histogram_w_imputation(adata_before_imputation, adata_after_imputation, n_co
     fig.suptitle("Gaussian Imputation (per protein) for each sample", fontsize=30, y=1.015)
     plt.show()
 
-def plot_PCA(adata, color_category, title_PCA="PCA", PC1=1, PC2=2):
+def plot_PCA_from_adata(adata, color_category, title_PCA="PCA", PC1=1, PC2=2):
     """
     Created by Jose Nimo on 2023 09 29
     Modified by Jose Nimo on 2023 09 29
@@ -203,12 +203,11 @@ def plot_PCA(adata, color_category, title_PCA="PCA", PC1=1, PC2=2):
         None
     """
 
-    sc.pl.pca(adata,
-                color=color_category,
-                show=False, 
-                size=300, 
-                alpha=0.8,
-                title=title_PCA)
+    if adata.uns.pca is None:
+        sc.tl.pca(adata, svd_solver='arpack')
+
+    #obtain sample coordinates per PC chosen
+    
 
     variance_ratio = adata.uns['pca']['variance_ratio'].tolist()
 
@@ -275,68 +274,6 @@ def PCA_comparison(adata1, adata2, color, categorical=False):
     
     plt.show()
 
-def plot_volcano(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True, FDR=None, tag_top=None, group1=None, group2=None):
-    plt.figure(figsize=(10,10))
-    sns.scatterplot(x=adata.var[x], y=adata.var[y])
-    if group1 is not None and group2 is not None:
-        plt.xlabel(f"Difference in mean protein expression (log2) \n {group1}(right) vs {group2}(left)")
-    plt.ylabel("-log10 corrected p-value BH")
-
-
-    if tag_top is not None:
-        df = adata.var
-        top_hits = df.sort_values(by=y, ascending=False)[:tag_top]
-        df = df[df.index.isin(top_hits.index)]
-        plt.scatter(x=[df[x] for i in range(top_hits.shape[0])], y=[df[y] for i in range(top_hits.shape[0])] , color="red")
-        texts = [plt.text(df[x][i], df[y][i], df.Genes[i], ha='center', va='center') for i in range(top_hits.shape[0])]
-        #adjust_text(texts, arrowprops=dict(arrowstyle="-", color='black', lw=0.5))
-        legend_elements = [
-        Patch(facecolor='red', edgecolor='black', label=f'top {tag_top} hits'),
-        ]
-    elif significant:
-        df = adata.var
-        df = df[df["p_val_corr_BH"] < FDR]
-        plt.scatter(x=df[x], y=df[y], color="red")
-
-        if df.shape[0] > 30:
-            df = df.sort_values(by=y, ascending=False)[:30] #top 30 maximum labels
-        texts = [plt.text(df[x][i], df[y][i], df.Genes[i], ha='center', va='center') for i in range(df.shape[0])]
-        adjust_text(texts, 
-        force_explode=(0.1,0.1), 
-        expand=(1,1),
-        force_static=(1.1, 1.1), 
-        force_text=(1.2,1.0), 
-        arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=.5))
-
-        # Create custom legend handles
-        legend_elements = [Patch(facecolor='red', edgecolor='black', label='significant')] 
-    
-    #create a vertical line at x=0
-    plt.axvline(x=0, color='black', linestyle='--', linewidth=1, alpha=0.2)
-    #remove grid
-    plt.grid(False)
-    # Add a legend with custom handles
-    plt.legend(handles=legend_elements, loc="upper right")
-    plt.show()
-
-    #example volcano plot code
-    # data = pd.read_csv('../../figures/volcano_data.csv')
-    # def plot_volcano(adjust=False, **kwargs):
-    #     plt.figure(figsize=(7, 10))
-    #     threshold = 0.05
-    #     xns, yns = data['log2FoldChange'][data['padj']>=threshold], -np.log10(data['pvalue'][data['padj']>=threshold])
-    #     plt.scatter(xns, yns, c='grey', edgecolor=(1,1,1,0), label='Not Sig')
-    #     xs, ys = data['log2FoldChange'][data['padj']<threshold], -np.log10(data['pvalue'][data['padj']<threshold])
-    #     plt.scatter(xs, ys, c='r', edgecolor=(1,1,1,0), label='FDR<5%')
-    #     texts = []
-    #     for x, y, l in zip(xs, ys, data['Gene'][data['padj']<threshold]):
-    #         texts.append(plt.text(x, y, l, size=8))
-    #     plt.legend()
-    #     plt.xlabel('$log_2(Fold Change)$')
-    #     plt.ylabel('$-log_{10}(pvalue)$')
-    #     if adjust:
-    #         adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5), **kwargs)
-    # _ = plot_volcano()
 
 def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True, FDR=None, tag_top=None, group1=None, group2=None):
     
@@ -403,28 +340,131 @@ import plotly.express as px
 import plotly.graph_objects as go
 import scanpy as sc
 sc.settings.verbosity = 1
+import plotly.io as pio
+import kaleido
 
-def plot_boxplots_plotly(adata, x_axis="Phenotype_1", hover_data="Phenotype_2", color_column="Phenotype_1"):
+def PCA_adata(adata, color:str=None, symbol:str=None, hoverwith:list=["sampleid"],
+            choose_PCs:list=[1,2],
+            multi_scatter:bool=False, how_many_PCs:int=4,
+            scatter_3d:bool=False,
+            save_path:str=None,
+            ):
+
+
+    if adata.uns['pca'] is None:
+        sc.tl.pca(adata, svd_solver='arpack')
+        print("PCA was not found in adata.uns['pca']. It was computed now.")
     
-    #create column called protein hits
+    df = pd.DataFrame(data=adata.obsm['X_pca'], 
+                        columns=[f'PC{i+1}' for i in range(adata.obsm['X_pca'].shape[1])], 
+                        index=adata.obs.index)
+    df = pd.concat([df, adata.obs], axis=1)
+
+    if multi_scatter and scatter_3d:
+        print("Please choose between multi_scatter and scatter_3d. Not both.")
+        return None
+    
+    elif multi_scatter:
+        features = [ f'PC{i+1}' for i in range(how_many_PCs)]
+        components = df[features].values
+        labels = {str(i): f"PC {i+1} ({var:.1f}%)" 
+                for i, var in enumerate(adata.uns['pca']['variance_ratio']*100)}
+        fig = px.scatter_matrix(
+            components,
+            labels=labels,
+            dimensions=range(how_many_PCs),
+            color=df[color],
+            symbol=df[symbol],
+            )
+        fig.update_traces(diagonal_visible=False,
+                        marker={'size': 18, 'opacity': 0.8})
+        dimension = how_many_PCs*500
+        fig.update_layout(height=dimension,width=dimension,
+                        font=dict(size=20, color='black'),)
+        fig.write_image(save_path, engine='kaleido') 
+
+    elif scatter_3d:
+        features = [ f'PC{i+1}' for i in range(3)]
+        components = df[features].values
+        fig = px.scatter_3d(
+            components, 
+            x=0, y=1, z=2, 
+            color=df[color],
+            symbol=df[symbol],
+            labels={'0': f'PC1  {adata.uns["pca"]["variance_ratio"][0]*100:.2f}%', 
+                    '1': f'PC2  {adata.uns["pca"]["variance_ratio"][1]*100:.2f}%', 
+                    '2': f'PC3  {adata.uns["pca"]["variance_ratio"][2]*100:.2f}%'},
+            )
+        fig.update_layout(width=1000, height=1000)
+        fig.write_html(save_path)
+    
+    else:
+        fig = px.scatter(df, x=f'PC{choose_PCs[0]}', y=f'PC{choose_PCs[1]}', 
+                        color=color, 
+                        symbol=symbol, 
+                        hover_data=hoverwith,
+                        labels={
+                            f'PC{choose_PCs[0]}': 
+                            f'PC{choose_PCs[0]} ({adata.uns["pca"]["variance_ratio"][choose_PCs[0]-1]*100:.2f}%)',
+                            f'PC{choose_PCs[1]}': 
+                            f'PC{choose_PCs[1]} ({adata.uns["pca"]["variance_ratio"][choose_PCs[1]-1]*100:.2f}%)'
+                        })
+
+        fig.update_layout(
+            title=dict(text=f"PCA of samples by {color} and {symbol}", font=dict(size=24), 
+                        automargin=True, yref='paper'),
+            font=dict( size=15, color='black'),
+            width=1200,
+            height=800,
+            template='plotly_white'
+            )
+        fig.update_traces(
+            marker={'size': 15, 'opacity': 0.8})
+        fig.write_image(save_path, engine='kaleido') 
+    
+    fig.show()
+
+
+def plot_boxplots_plotly(adata, 
+                        x_axis="Phenotype_1", 
+                        y_axis:str="n_proteins", 
+                        hover_data:list=["Phenotype_2"], 
+                        color_column="Phenotype_1",
+                        return_fig=False,
+                        save_path:str=None,
+                        save_df_path:str=None,
+                        **kwargs):
+
     adata_copy = adata.copy()
-    sc.pp.filter_cells(adata_copy, min_genes=1, inplace=True, copy=False)
 
     df = pd.DataFrame(index=adata_copy.obs.index, data=adata_copy.obs.values, columns=adata_copy.obs_keys())
 
-
-    fig = px.box(df, x=x_axis, y='n_genes', 
-        points='all', hover_data=[hover_data],
-        # category_orders={"Celltype_sub": order_of_labels}, 
+    fig = px.box(df, x=x_axis, y=y_axis, 
+        points='all', hover_data=hover_data, 
         color=color_column, width=1000, height=800,
-        color_discrete_sequence=px.colors.qualitative.G10
+        color_discrete_sequence=px.colors.qualitative.G10,
+        **kwargs
         )
 
     fig.update_layout(
-        title='Protein groups measured for each celltype',
+        title=dict(text="Proteins per sample", 
+                font=dict(size=30), 
+                automargin=True, 
+                yref='paper'),
+        font=dict( size=18, color='black'),
         paper_bgcolor='rgb(255, 255, 255)',
         plot_bgcolor='rgb(255, 255, 255)',
         showlegend=True,   
     )
 
-    fig.show()
+    if save_df_path is not None:
+        df.to_csv(save_df_path)
+    if save_path is not None:
+        # plt.savefig(save_path, format="png")
+        fig.write_image(save_path, engine='kaleido') 
+
+
+    if return_fig:
+        return fig
+    else:
+        fig.show()

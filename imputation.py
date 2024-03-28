@@ -1,11 +1,4 @@
-#basic python
-import os
-import sys
-from datetime import datetime
-date = datetime.now().strftime("%Y%m%d")
-from tabulate import tabulate
-import shutil
-import time
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -15,32 +8,6 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 sc.settings.verbosity = 1
-import anndata as ad
-from sklearn.utils import shuffle
-
-#math
-import pingouin as pg
-import statsmodels.api as sm
-import statsmodels.stats.multitest
-from scipy.stats import zscore
-from scipy.stats import pearsonr
-from scipy.stats import spearmanr 
-from scipy.stats import ttest_ind
-from scipy.sparse import csr_matrix
-from scipy.stats import shapiro
-
-#imputation
-# from missingpy import MissForest
-
-#plotting
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import seaborn as sns
-from adjustText import adjust_text
-sc.set_figure_params(dpi=150)
 
 def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False):
     """

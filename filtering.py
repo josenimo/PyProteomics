@@ -19,10 +19,10 @@ sc.settings.verbosity = 1
 sc.set_figure_params(dpi=150)
 import anndata as ad
 
-def filter_invalid_proteins(adata, grouping, threshold):
+def filter_invalid_proteins(adata, grouping, threshold, save_df_path:str=None):
     """
     Created by Jose Nimo on 2023-07-01
-    Lastest modified by Jose Nimo on 2023-08-21
+    Lastest modified by Jose Nimo on 2024-03-28
 
     Description:
         Filter out proteins that have a NaN proportion above the threshold, for each group in the grouping variable.
@@ -33,35 +33,51 @@ def filter_invalid_proteins(adata, grouping, threshold):
     Returns:
         adata: anndata object, filtered
     """
-    print(f"------------------Filter Invalid Proteins ------------------")
-    print(f"Keeping proteins that have at least {threshold} valid values for any group in {grouping}")
-    
-    #global variable to store the names of the proteins that should be kept
-    valid_protein_names = []
-    # dataframe to store the report
-    df_report = pd.DataFrame(columns=['Group', 'Invalid_proteins', 'Valid_proteins'])
 
-    for group in adata.obs[grouping].unique():
-        # filter adata by group
-        adata_group = adata[adata.obs[grouping] == group]
-        # array from adata
-        protein_data_group = adata_group.X
-        # create a dataframe with the nan proportions for each protein
-        # 0.6 means that 60% of the samples are NaNs
-        nan_proportions = pd.DataFrame(np.isnan(protein_data_group).mean(axis=0), columns=['nan_proportion'])
-        # get the proteins that have a NaN proportion below the threshold
-        nan_proportions_T_F = nan_proportions['nan_proportion'] <= (1.0-threshold)
-        #dataframe for reporting the results
-        df_report.loc[len(df_report)] = [group,(len(nan_proportions_T_F) - nan_proportions_T_F.sum()), (nan_proportions_T_F.sum())]
-        # get the proteins that should be kept
-        valid_proteins_group = adata.var[nan_proportions_T_F.values]
-        # add the proteins to the global variable
-        valid_protein_names.extend(list(set(valid_proteins_group.index)))
+    print(f"------------------Filter Invalid Proteins ------------------")
+    print(f"Keeping proteins that have at least {threshold} valid values for any group in {grouping}\n")
+
+    df_proteins = pd.DataFrame(index=adata.var_names, columns=['Genes'], data=adata.var['Genes'])
+    df_proteins['Genes'].fillna('None', inplace=True)
+
+    if grouping:
+
+        for group in adata.obs[grouping].unique():
+            
+            adata_group = adata[adata.obs[grouping] == group]
+            protein_data_group = adata_group.X
+            
+            df_proteins[f"{group}_mean"]            = np.nanmean(adata_group.X, axis=0)
+            df_proteins[f'{group}_nan_count']       = np.isnan(protein_data_group).sum(axis=0)
+            df_proteins[f'{group}_valid_count']     = (~np.isnan(protein_data_group)).sum(axis=0)
+            df_proteins[f'{group}_nan_proportions'] = np.isnan(protein_data_group).mean(axis=0)
+            df_proteins[f'{group}_valid']           = df_proteins[f'{group}_nan_proportions'] < threshold
         
-    # Get the unique set of filtered proteins across groups
-    valid_proteins_unique = list(set(valid_protein_names))
-    # filter proteins
-    adata = adata[:, valid_proteins_unique]
-    print(tabulate(df_report, headers='keys', tablefmt='psql', showindex=False))
-    print(f"The output object has {adata.shape[1]} proteins")
+        df_proteins['valid_in_all'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].all(axis=1)
+        df_proteins['valid_in_any'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].any(axis=1)
+        df_proteins['not_valid_in_any'] = ~df_proteins['valid_in_any']
+
+        adata = adata[:, df_proteins.valid_in_any.values]
+        print(f"{df_proteins['valid_in_any'].sum()} proteins were kept")
+        print(f"{df_proteins['not_valid_in_any'].sum()} proteins were filtered out")
+
+    else:
+
+        print("No grouping variable was provided. Filtering out proteins with NaN values")
+        df_proteins["mean"]            = np.nanmean(adata.X, axis=0)
+        df_proteins['nan_count']       = np.isnan(adata.X).sum(axis=0)
+        df_proteins['valid_count']     = (~np.isnan(adata.X)).sum(axis=0)
+        df_proteins['nan_proportions'] = np.isnan(adata.X).mean(axis=0)
+        df_proteins['valid']           = df_proteins[f'nan_proportions'] < threshold
+        df_proteins['not_valid']       = ~df_proteins['valid']
+
+        adata = adata[:, df_proteins.valid.values]
+        print(f"{df_proteins['valid'].sum()} proteins were kept")
+        print(f"{df_proteins['not_valid'].sum()} proteins were filtered out")
+    
+    if save_df_path:
+        df_proteins.to_csv(save_df_path)
+    
+    print(f"For more details check the dataframe saved with save_df_path argument")
+    
     return adata
