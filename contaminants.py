@@ -2,9 +2,7 @@ import pandas as pd
 import numpy as np
 from tabulate import tabulate
 
-
-
-def filter_out_contaminants(adata, export_path=None):
+def filter_out_contaminants(adata, qc_export_path=None):
     print("----- Filter out contaminants -----")
     
     #create condition
@@ -23,8 +21,8 @@ def filter_out_contaminants(adata, export_path=None):
         showindex="always",
         maxcolwidths=[20,20,20]))
 
-    if export_path:
-        filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(export_path)
+    if qc_export_path:
+        filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(qc_export_path)
     
     adata = adata[:, ~combined_condition]
 

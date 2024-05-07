@@ -7,7 +7,7 @@ import anndata as ad
 def DIANN_to_adata(DIANN_path:str,
                 DIANN_sep:str="\t",
                 metadata_path:str = None, 
-                metadata_sep:str="csv", 
+                metadata_sep:str=",", 
                 metadata_check=False, 
                 sample_id_column:str="Name" ) -> ad.AnnData:
 
@@ -18,12 +18,15 @@ def DIANN_to_adata(DIANN_path:str,
     Description:
     Converts DIANN output file and metadata file into anndata object.
     Assumes DIANN output file is tab-delimited, with the first 5 columns being metadata, and the rest being protein expression data.
-    Assumes metadata file is tab-delimited, with a column of sample names with columnd header called 'Name', and the rest being metadata.
+    Assumes metadata file is comma delimited, with a column of sample names with columnd header called 'Name', and the rest being metadata.
 
     Arguments:
     DIANN_path: path to DIANN output file
+    DIANN_sep: delimiter for DIANN output file
     metadata_path: path to metadata file
+    metadata_sep: delimiter for metadata file
     metadata_check: boolean, if True, prints metadata values
+    sample_id_column: name of the column in metadata file that contains the sample names
 
     """
     
@@ -72,7 +75,7 @@ def DIANN_to_adata(DIANN_path:str,
     protein_metadata = protein_metadata.drop("Protein.Group", axis=1) #drop the name column, since it is now the index
     print(f"For a total of {protein_metadata.shape[0]} proteins \n")
 
-    print("Step 4: Creating anndata object")
+    print("Step 4: Creating anndata object:")
     adata = ad.AnnData(X=rawdata.values, obs=sample_metadata, var= protein_metadata) #create anndata object
     print(adata)
     print("\n")

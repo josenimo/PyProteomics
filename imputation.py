@@ -1,4 +1,4 @@
-
+import sys
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -7,12 +7,17 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import anndata as ad
 sc.settings.verbosity = 1
 
-def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False):
+from loguru import logger
+logger.remove()
+logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
+
+def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_export_path:str=None) -> ad.AnnData:
     """
     Created by Jose Nimo on 2023-07-20
-    Modified by Jose Nimo on 2023-08-16
+    Modified by Jose Nimo on 2024-05-07
 
     Description:
         This function imputes missing values in the adata object using a Gaussian distribution.
@@ -32,14 +37,17 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
         adata_copy: AnnData object
             AnnData object with imputed values
     """
+
     adata_copy = adata.copy()
     df = pd.DataFrame(data = adata_copy.X, columns = adata_copy.var.index, index = adata_copy.obs_names)
 
     if perSample:
-        print(" --- --- --- Imputation with Gaussian distribution per sample is running... --- --- --- ")
+        logger.info("Imputation with Gaussian distribution PER SAMPLE")
         df = df.T
     else:
-        print(" --- --- --- Imputation with Gaussian distribution per protein is running... --- --- --- ")
+        logger.info("Imputation with Gaussian distribution PER PROTEIN")
+
+    logger.info(f'Mean number of missing values per sample: {round(df.isnull().sum(axis=1).mean(),2)} out of {df.shape[1]} proteins')
 
     # Iterate over each column in the DataFrame
     for col in df.columns:
@@ -49,21 +57,21 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
         # Identify NaN positions in the column
         nan_mask = df[col].isnull()
         num_nans = nan_mask.sum()
-        # Generate random values from the Gaussian distribution proportional to original distribution
-        # the mean is shifted by the mean shift value multiplied by the standard deviation
+        # Generate enough random values to replace the NaNs 
         random_values = np.random.randn(num_nans)
+        # the mean is shifted by the mean shift value multiplied by the standard deviation
         shifted_random_values = (col_mean+(mean_shift*col_std)) + (col_std*std_dev_shift) * random_values
         # Replace NaNs in the column with the generated random values
         df.loc[nan_mask, col] = shifted_random_values
 
+    #TODO QC plots
+
     if perSample:
         df = df.T
-
+    
     adata_copy.X = df.values
 
-    #mean number of missing values per row (sample)
-    df = pd.DataFrame(data=adata.X, columns=adata.var_names, index=adata.obs_names)
-    print('Mean number of missing values per sample: ', round(df.isnull().sum(axis=1).mean(),2), 'out of ', df.shape[1], ' proteins')
-    print(" --- --- --- Imputation with Gaussian distribution is done! --- --- --- ")
+    assert df.isnull().sum(axis=1).sum() == 0, "There are still missing values in the imputed data"
+    logger.info("Imputation complete")
 
     return adata_copy
