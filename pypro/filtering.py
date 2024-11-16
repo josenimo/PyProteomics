@@ -1,93 +1,185 @@
-#Created by Jose Nimo
-
-import os
-import sys
-from datetime import datetime
-date = datetime.now().strftime("%Y%m%d")
-from tabulate import tabulate
-import shutil
-import time
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
-warnings.simplefilter(action="ignore", category=RuntimeWarning)
-
-from loguru import logger
-logger.remove()
-logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
-
-#dataframe management
+import os, sys, time
+import anndata as ad
 import numpy as np
 import pandas as pd
 import scanpy as sc
+from loguru import logger
+import tabulate
+
+datetime = time.strftime("%Y%m%d_%H%M%S")
+# from tabulate import tabulate
+# import shutil
+# import warnings
+# warnings.simplefilter(action='ignore', category=FutureWarning)
+# warnings.simplefilter(action='ignore', category=UserWarning)
+# warnings.simplefilter(action="ignore", category=RuntimeWarning)
+
+logger.remove()
+logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 sc.settings.verbosity = 1
 sc.set_figure_params(dpi=150)
-import anndata as ad
 
-def filter_invalid_proteins(adata, threshold:float=0.6, grouping:str=None, qc_export_path:str=None) -> ad.AnnData:
+def filter_proteins_without_genenames(adata) -> ad.AnnData:
+    """
+    Description:
+        Removes proteins without gene names
+    """
+
+    adata_copy = adata.copy()
+
+    df_missing = adata.var[adata.var.Genes.isna()]
+    logger.info(f"Found {df_missing.shape[0]} genes as NaNs")
+    print(tabulate.tabulate(df_missing, headers=df_missing.columns, tablefmt="grid"))
+    logger.info("Returning adata with those proteins/genes")
+
+    return adata_copy[:, ~adata_copy.var.Genes.isna()]
+    
+def filter_out_contaminants(
+        adata, 
+        print_summary=False, 
+        qc_export_path=None) -> ad.AnnData:
+    """
+    Version 1.1.1
+    Description:
+        This function filters out contaminants from the adata object.
+    Parameters:
+        adata: AnnData object
+            The AnnData object containing the protein expression data.
+        print_summary: bool, default=False
+            If True, a summary of the filtered out contaminants will be printed.
+        qc_export_path: str, default=None
+            If not None, the filtered out contaminants will be exported to this path.
+        keep_genes: list of str, default=None
+            List of gene names to retain, even if they contain contaminant indicators.
+    Returns:
+        AnnData object
+            The AnnData object with contaminants filtered out.
+    Date: 16.11.2024
+    """
+
+    #TODO keep_genes:list=None
+
+    logger.info("Filtering out contaminants")
+    adata_copy = adata.copy()
+
+    condition1 = adata_copy.var["Protein.Ids"].str.contains("Cont_")
+    condition2 = adata_copy.var_names.str.contains("Cont_")
+    combined_condition = condition1 | condition2
+
+    # if keep_genes:
+    #     logger.info(f"Not removing {keep_genes} ")
+
+    #     adata_copy.var["Genes"] = adata_copy.var["Genes"].astype(str)
+    #     adata_copy.var["Genes"] = adata_copy.var["Genes"].fillna("None")
+        
+    #     to_keep = pd.Series([False] * len(adata_copy.var), index=adata_copy.var.index)
+
+    #     for gene in keep_genes:
+    #         adata_copy.var[f'{gene}_present'] = adata_copy.var['Genes'].str.contains(gene)
+    #         to_keep |= adata_copy.var[f'{gene}_present']  # Accumulate True values with bitwise OR
+
+    #     logger.debug(f"{combined_condition.sum()} genes to be removed, before checking keep genes")
+    #     logger.debug(f"{keep_genes.sum()} keep_genes has this many rows ")
+
+    #     combined_condition = combined_condition & ~to_keep
+
+    filtered_out = adata_copy[:, combined_condition].copy()
+    filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
+
+    if print_summary:
+        print("the following proteins were filtered out:")
+        print(tabulate.tabulate(
+            filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].values,
+            headers=["Genes","Protein.Names","Species"], 
+            tablefmt='psql',
+            showindex="always",
+            maxcolwidths=[20,20,20]))
+
+    if qc_export_path:
+        filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(qc_export_path)
+    
+    adata_copy = adata_copy[:, ~combined_condition]
+
+    print(f"The output object has {adata_copy.shape[1]} proteins in it")
+    print("\n")
+    return adata_copy
+
+def filter_invalid_proteins(
+        adata, 
+        threshold:float=0.7, 
+        grouping:str=None, 
+        qc_export_path:str=None,
+        valid_in_ANY_or_ALL_groups:str='ANY') -> ad.AnnData:
     """
     Created by Jose Nimo on 2023-07-01
-    Lastest modified by Jose Nimo on 2024-05-07
+    Lastest modified by Jose Nimo on 2024-11-16
 
     Description:
         Filter out proteins that have a NaN proportion above the threshold, for each group in the grouping variable.
-        #TODO clarify if 0.7 means that 60% NaNs are allowed
-    Variables:
+    Arg:
         adata: anndata object
         threshold: float, between 0 and 1, proportion of valid values above which a protein is considered valid
         grouping: Optional, string, name of the column in adata.obs to discriminate the groups by,
             if two groups are chosen, the protein must have a valid value in at least one of the groups
         qc_export_path: Optional, string, path to save the dataframe with the filtering results
+        valid_in_ANY_or_ALL_groups:str='ANY'
+            "ANY" means that if a protein passes the threshold in any group it will be kept
+            "ALL" means that a protein must pass validity threshold for all groups to be kept (more stringent)
     Returns:
         adata: anndata object, filtered
     """
 
-    #TODO add minimum absolute number of valid values
-    #TODO print example to show threshold visually
-    #TODO wording should be around threshold of valid values, not of NaNs
+    logger.info(f"Filtering proteins, they need to have {threshold*100}% valid values to be kept")
 
-    logger.info(f"Filtering proteins with too many NaNs")
+    assert 0 <= threshold <= 1, "Threshold must be between 0 and 1"
+    assert valid_in_ANY_or_ALL_groups in ['ANY', 'ALL'], "valid_in_ANY_or_ALL_groups must be 'ANY' or 'ALL'"
 
-    df_proteins = pd.DataFrame(index=adata.var_names, columns=['Genes'], data=adata.var['Genes'])
-    df_proteins['Genes'].fillna('None', inplace=True)
+    adata_copy = adata.copy()
 
+    df_proteins = pd.DataFrame(index=adata_copy.var_names, columns=["Genes"], data=adata_copy.var['Genes'])
+    df_proteins['Genes'] = df_proteins['Genes'].astype(str)
+    df_proteins.fillna({"Genes":'None'}, inplace=True)
 
     if grouping:
         logger.info(f"Filtering proteins by groups, {grouping}: {adata.obs[grouping].unique().tolist()}")
-        logger.info(f"Any protein with a NaN proportion above {threshold} in ALL groups will be filtered out")
 
         for group in adata.obs[grouping].unique():
             logger.debug(f"Processing group: {group}")
-
             adata_group = adata[adata.obs[grouping] == group]
             logger.debug(f"Group {group} has {adata_group.shape[0]} samples and {adata_group.shape[1]} proteins")
             
-            df_proteins[f"{group}_mean"]            = np.nanmean(adata_group.X, axis=0)
+            df_proteins[f"{group}_mean"]            = np.nanmean(adata_group.X, axis=0).round(3)
             df_proteins[f'{group}_nan_count']       = np.isnan(adata_group.X).sum(axis=0)
             df_proteins[f'{group}_valid_count']     = (~np.isnan(adata_group.X)).sum(axis=0)
-            df_proteins[f'{group}_nan_proportions'] = np.isnan(adata_group.X).mean(axis=0)
-            df_proteins[f'{group}_valid']           = df_proteins[f'{group}_nan_proportions'] < threshold
+            df_proteins[f'{group}_nan_proportions'] = np.isnan(adata_group.X).mean(axis=0).round(3)
+            df_proteins[f'{group}_valid']           = df_proteins[f'{group}_nan_proportions'] < (1.0 - threshold)   
         
+        logger.info(f"Any protein that has a minimum of {threshold*100} valid values in {valid_in_ANY_or_ALL_groups} group, will be kept")
         df_proteins['valid_in_all'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].all(axis=1)
         df_proteins['valid_in_any'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].any(axis=1)
         df_proteins['not_valid_in_any'] = ~df_proteins['valid_in_any']
 
-        adata = adata[:, df_proteins.valid_in_any.values]
-        logger.info(f"{df_proteins['valid_in_any'].sum()} proteins were kept")
-        logger.info(f"{df_proteins['not_valid_in_any'].sum()} proteins were filtered out")
+        if valid_in_ANY_or_ALL_groups == 'ALL':
+            adata_copy = adata_copy[:, df_proteins.valid_in_all.values]
+            logger.info(f"{df_proteins['valid_in_all'].sum()} proteins were kept")
+            logger.info(f"{df_proteins.shape[0] - df_proteins['valid_in_all'].sum()} proteins were removed")
+        elif valid_in_ANY_or_ALL_groups == 'ANY':
+            adata_copy = adata_copy[:, df_proteins.valid_in_any.values]
+            logger.info(f"{df_proteins['valid_in_any'].sum()} proteins were kept")
+            logger.info(f"{df_proteins.shape[0] - df_proteins['valid_in_any'].sum()} proteins were removed")
 
     else:
-        logger.info(f"No grouping variable was provided, any protein with a NaN proportion above {threshold} will be filtered out")
-        logger.debug(f"adata has {adata.shape[0]} samples and {adata.shape[1]} proteins")
+        logger.info("No grouping variable was provided")
+        logger.debug(f"adata has {adata_copy.shape[0]} samples and {adata_copy.shape[1]} proteins")
 
-        df_proteins["mean"]            = np.nanmean(adata.X, axis=0)
-        df_proteins['nan_count']       = np.isnan(adata.X).sum(axis=0)
-        df_proteins['valid_count']     = (~np.isnan(adata.X)).sum(axis=0)
-        df_proteins['nan_proportions'] = np.isnan(adata.X).mean(axis=0)
-        df_proteins['valid']           = df_proteins[f'nan_proportions'] < threshold
+        df_proteins["mean"]            = np.nanmean(adata_copy.X, axis=0)
+        df_proteins['nan_count']       = np.isnan(adata_copy.X).sum(axis=0)
+        df_proteins['valid_count']     = (~np.isnan(adata_copy.X)).sum(axis=0)
+        df_proteins['nan_proportions'] = np.isnan(adata_copy.X).mean(axis=0)
+        df_proteins['valid']           = df_proteins[f'nan_proportions'] < (1.0 - threshold)
         df_proteins['not_valid']       = ~df_proteins['valid']
 
-        adata = adata[:, df_proteins.valid.values]
+        adata_copy = adata_copy[:, df_proteins.valid.values]
         print(f"{df_proteins['valid'].sum()} proteins were kept")
         print(f"{df_proteins['not_valid'].sum()} proteins were filtered out")
     
@@ -95,4 +187,4 @@ def filter_invalid_proteins(adata, threshold:float=0.6, grouping:str=None, qc_ex
         logger.info(f"Saving dataframe with filtering results to {qc_export_path}")
         df_proteins.to_csv(qc_export_path)
     
-    return adata
+    return adata_copy

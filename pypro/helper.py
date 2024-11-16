@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import tabulate
 import anndata as ad
+import time
+datetime = time.strftime("%Y%m%d_%H%M%S")
 
 from loguru import logger
 logger.remove()
@@ -76,7 +78,3 @@ def DIANN_to_adata( DIANN_path:str,
     print("\n")
 
     return adata
-
-
-# def adata_to_csv(adata): 
-    
