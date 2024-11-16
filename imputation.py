@@ -38,6 +38,8 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
             AnnData object with imputed values
     """
 
+    #TODO print number average number of missing values per protein
+
     adata_copy = adata.copy()
     df = pd.DataFrame(data = adata_copy.X, columns = adata_copy.var.index, index = adata_copy.obs_names)
 

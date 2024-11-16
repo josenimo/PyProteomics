@@ -62,6 +62,7 @@ def Ttest_adata(adata, grouping, group1, group2, FDR_threshold=0.05):
 
     """
 
+    #TODO assert that adata slicing returns a non-empty object
     
     #setup
     adata_copy = adata.copy()

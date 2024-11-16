@@ -31,6 +31,7 @@ def filter_invalid_proteins(adata, threshold:float=0.6, grouping:str=None, qc_ex
 
     Description:
         Filter out proteins that have a NaN proportion above the threshold, for each group in the grouping variable.
+        #TODO clarify if 0.7 means that 60% NaNs are allowed
     Variables:
         adata: anndata object
         threshold: float, between 0 and 1, proportion of valid values above which a protein is considered valid
@@ -40,6 +41,10 @@ def filter_invalid_proteins(adata, threshold:float=0.6, grouping:str=None, qc_ex
     Returns:
         adata: anndata object, filtered
     """
+
+    #TODO add minimum absolute number of valid values
+    #TODO print example to show threshold visually
+    #TODO wording should be around threshold of valid values, not of NaNs
 
     logger.info(f"Filtering proteins with too many NaNs")
 
