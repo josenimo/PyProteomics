@@ -35,55 +35,51 @@ def filter_proteins_without_genenames(adata) -> ad.AnnData:
     return adata_copy[:, ~adata_copy.var.Genes.isna()]
     
 def filter_out_contaminants(
-        adata, 
+        adata,
+        adata_var_column_with_label:str="Protein.Ids",
+        string_to_indicate_removal:str="Cont_",
+        keep_genes:list=[],
         print_summary=False, 
         qc_export_path=None) -> ad.AnnData:
     """
-    Version 1.1.1
+    Version 2.0.0
     Description:
         This function filters out contaminants from the adata object.
     Parameters:
         adata: AnnData object
             The AnnData object containing the protein expression data.
+        adata_var_column_with_label:
+            The column in adata.var that contains the protein names with substring to be removed.
+        string_to_indicate_removal: str
+            The string that indicates that a protein is a contaminant.
+        keep_genes: list of str, default=None
+            List of gene names to retain, even if they contain contaminant indicators.
         print_summary: bool, default=False
             If True, a summary of the filtered out contaminants will be printed.
         qc_export_path: str, default=None
             If not None, the filtered out contaminants will be exported to this path.
-        keep_genes: list of str, default=None
-            List of gene names to retain, even if they contain contaminant indicators.
     Returns:
         AnnData object
             The AnnData object with contaminants filtered out.
-    Date: 16.11.2024
+    Date: 17.11.2024
     """
-
-    #TODO keep_genes:list=None
 
     logger.info("Filtering out contaminants")
     adata_copy = adata.copy()
 
-    condition1 = adata_copy.var["Protein.Ids"].str.contains("Cont_")
-    condition2 = adata_copy.var_names.str.contains("Cont_")
-    combined_condition = condition1 | condition2
+    condition = adata_copy.var[adata_var_column_with_label].str.contains(string_to_indicate_removal)
 
-    # if keep_genes:
-    #     logger.info(f"Not removing {keep_genes} ")
+    if len(keep_genes)>0 :
+        logger.info(f"Keeping {keep_genes} from being removed")
+        accumulated_boolean = np.zeros(adata_copy.var.shape[0], dtype=bool)
+        for gene in keep_genes:
+            logger.info(f"{gene} being kept")
+            match_boolean = adata.var["Genes"].str.contains(gene, na=False).values.astype(bool)
+            accumulated_boolean |= match_boolean
+            logger.info(f"Number of excluded contaminants: {accumulated_boolean.sum()}")
+        condition = np.where(condition & accumulated_boolean, False, condition)
 
-    #     adata_copy.var["Genes"] = adata_copy.var["Genes"].astype(str)
-    #     adata_copy.var["Genes"] = adata_copy.var["Genes"].fillna("None")
-        
-    #     to_keep = pd.Series([False] * len(adata_copy.var), index=adata_copy.var.index)
-
-    #     for gene in keep_genes:
-    #         adata_copy.var[f'{gene}_present'] = adata_copy.var['Genes'].str.contains(gene)
-    #         to_keep |= adata_copy.var[f'{gene}_present']  # Accumulate True values with bitwise OR
-
-    #     logger.debug(f"{combined_condition.sum()} genes to be removed, before checking keep genes")
-    #     logger.debug(f"{keep_genes.sum()} keep_genes has this many rows ")
-
-    #     combined_condition = combined_condition & ~to_keep
-
-    filtered_out = adata_copy[:, combined_condition].copy()
+    filtered_out = adata_copy[:, condition].copy()
     filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
 
     if print_summary:
@@ -98,7 +94,7 @@ def filter_out_contaminants(
     if qc_export_path:
         filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(qc_export_path)
     
-    adata_copy = adata_copy[:, ~combined_condition]
+    adata_copy = adata_copy[:, ~condition]
 
     print(f"The output object has {adata_copy.shape[1]} proteins in it")
     print("\n")
