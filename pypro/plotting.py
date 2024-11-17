@@ -274,7 +274,6 @@ def PCA_comparison(adata1, adata2, color, categorical=False):
     
     plt.show()
 
-
 def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True, FDR=None, tag_top=None, group1=None, group2=None):
     
     adata_copy = adata.copy()
@@ -435,7 +434,6 @@ def PCA_adata(adata,
     
     if not return_fig:
         fig.show()
-
 
 def plot_boxplots_plotly(adata, 
                         x_axis="Phenotype_1", 
