@@ -1,24 +1,17 @@
 import sys
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
-
-#dataframe management
 import numpy as np
 import pandas as pd
-import scanpy as sc
 import anndata as ad
-sc.settings.verbosity = 1
-
 from loguru import logger
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 
-def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_export_path:str=None) -> ad.AnnData:
+def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_export_path:str=None) -> ad.AnnData:
     """
-    Created by Jose Nimo on 2023-07-20
-    Modified by Jose Nimo on 2024-05-07
-
     Description:
         This function imputes missing values in the adata object using a Gaussian distribution.
         The mean and standard deviation of the Gaussian distribution are calculated for each column (protein) in the adata object.
@@ -38,8 +31,6 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
             AnnData object with imputed values
     """
 
-    #TODO print number average number of missing values per protein
-
     adata_copy = adata.copy()
     df = pd.DataFrame(data = adata_copy.X, columns = adata_copy.var.index, index = adata_copy.obs_names)
 
@@ -50,6 +41,7 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
         logger.info("Imputation with Gaussian distribution PER PROTEIN")
 
     logger.info(f'Mean number of missing values per sample: {round(df.isnull().sum(axis=1).mean(),2)} out of {df.shape[1]} proteins')
+    logger.info(f'Mean number of missing values per protein: {round(df.isnull().sum(axis=0).mean(),2)} out of {df.shape[0]} samples')
 
     # Iterate over each column in the DataFrame
     for col in df.columns:
@@ -66,14 +58,9 @@ def imputation_gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=Fal
         # Replace NaNs in the column with the generated random values
         df.loc[nan_mask, col] = shifted_random_values
 
-    #TODO QC plots
-
     if perSample:
         df = df.T
     
     adata_copy.X = df.values
-
-    assert df.isnull().sum(axis=1).sum() == 0, "There are still missing values in the imputed data"
     logger.info("Imputation complete")
-
     return adata_copy
