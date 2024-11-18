@@ -78,3 +78,18 @@ def DIANN_to_adata( DIANN_path:str,
     print("\n")
 
     return adata
+
+
+def adata_to_DIANN(adata):
+
+
+    #TODO can improve this
+    
+    df_var = adata.var
+    df = pd.DataFrame(data=adata.X.T, index=adata.var_names, columns=adata.obs.index) 
+    df = pd.concat([df, df_var], axis=1)
+    column_order = ['Protein.Ids','Protein.Names', 'Genes', 'First.Protein.Description']
+    for sample_name in adata.obs.index:
+        column_order.append(sample_name)
+    df = df[column_order]
+    return df
