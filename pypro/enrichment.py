@@ -42,6 +42,7 @@ def plot_ORA_heatmap(
     print(f"Collection dataframe shape {msigdb_collection.shape}")
     #print 5 unique genesets
     print(f"{msigdb_collection['geneset'].nunique()} unique genesets")
+    # print(f"{msigdb_collection['geneset'].value_counts().head()}")
 
     print("Running ORA")
     dc.run_ora(

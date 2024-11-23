@@ -79,7 +79,6 @@ def DIANN_to_adata( DIANN_path:str,
 
     return adata
 
-
 def adata_to_DIANN(adata):
 
 
@@ -93,3 +92,41 @@ def adata_to_DIANN(adata):
         column_order.append(sample_name)
     df = df[column_order]
     return df
+
+def switch_adat_var_index(adata, new_index):
+    """
+    Created by Jose Nimo on 2023-07-01
+    Lastest modified by Jose Nimo on 2024-11-16
+
+    Description:
+    Switch the index of adata.var to a new index. Useful for switching between gene names and protein names.
+
+    Arg:
+        adata: anndata object
+        new_index: pandas series, new index to switch to
+    Returns:
+        adata: anndata object, with the new index
+    """
+    adata_copy = adata.copy()
+
+    adata_copy.var[adata_copy.var.index.name] = adata_copy.var.index
+    adata_copy.var.set_index(new_index, inplace=True)
+    adata_copy.var.index.name = new_index
+    
+    return adata_copy
+
+def remove_genelists_from_adata(adata, genes_index=True) -> ad.AnnData:
+    
+    adata_copy = adata.copy()
+
+    print("We assume the Genes are in the index of adata.var")
+
+    print(f"To confirm we found that {adata_copy.var[ adata_copy.var['Protein.Names'].str.contains(";") & 
+                adata_copy.var["Protein.Ids"].str.contains(";") &
+                adata_copy.var.index.str.contains (";") &
+                adata_copy.var.index.str.contains(";")
+                ].shape[0]} proteins/genes were found with ';' in their name in the four descriptive columns")
+    
+    adata_copy.var.index = [gene.split(";")[0] for gene in adata_copy.var.index.tolist()]
+
+    return adata_copy
