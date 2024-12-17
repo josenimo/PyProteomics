@@ -79,8 +79,8 @@ def filter_out_contaminants(
             logger.info(f"Number of excluded contaminants: {accumulated_boolean.sum()}")
         condition = np.where(condition & accumulated_boolean, False, condition)
 
-    filtered_out = adata_copy[:, condition].copy()
-    filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
+    # filtered_out = adata_copy[:, condition].copy()
+    # filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
 
     if print_summary:
         print("the following proteins were filtered out:")
@@ -99,6 +99,55 @@ def filter_out_contaminants(
     print(f"The output object has {adata_copy.shape[1]} proteins in it")
     print("\n")
     return adata_copy
+
+#### ERROR: ## 
+
+# ---------------------------------------------------------------------------
+# KeyError                                  Traceback (most recent call last)
+# Cell In[93], line 3
+#       1 datetime = time.strftime("%Y%m%d_%H%M%S")
+#       2 import filtering
+# ----> 3 adata = filtering.filter_out_contaminants(adata, 
+#       4                                         adata_var_column_with_label="Protein.Names",
+#       5                                         print_summary=False)
+
+# File ~/Jose_BI/3_Python_Functions/PyProteomics/pypro/filtering.py:82, in filter_out_contaminants(adata, adata_var_column_with_label, string_to_indicate_removal, keep_genes, print_summary, qc_export_path)
+#      79         logger.info(f"Number of excluded contaminants: {accumulated_boolean.sum()}")
+#      80     condition = np.where(condition & accumulated_boolean, False, condition)
+# ---> 82 filtered_out = adata_copy[:, condition].copy()
+#      83 filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
+#      85 if print_summary:
+
+# File /opt/homebrew/Caskroom/mambaforge/base/envs/proteomics/lib/python3.12/site-packages/anndata/_core/anndata.py:1021, in AnnData.__getitem__(self, index)
+#    1019 def __getitem__(self, index: Index) -> AnnData:
+#    1020     """Returns a sliced view of the object."""
+# -> 1021     oidx, vidx = self._normalize_indices(index)
+#    1022     return AnnData(self, oidx=oidx, vidx=vidx, asview=True)
+
+# File /opt/homebrew/Caskroom/mambaforge/base/envs/proteomics/lib/python3.12/site-packages/anndata/_core/anndata.py:1002, in AnnData._normalize_indices(self, index)
+#    1001 def _normalize_indices(self, index: Index | None) -> tuple[slice, slice]:
+# -> 1002     return _normalize_indices(index, self.obs_names, self.var_names)
+
+# File /opt/homebrew/Caskroom/mambaforge/base/envs/proteomics/lib/python3.12/site-packages/anndata/_core/index.py:39, in _normalize_indices(index, names0, names1)
+#      37 ax0, ax1 = unpack_index(index)
+#      38 ax0 = _normalize_index(ax0, names0)
+# ---> 39 ax1 = _normalize_index(ax1, names1)
+#      40 return ax0, ax1
+
+# File /opt/homebrew/Caskroom/mambaforge/base/envs/proteomics/lib/python3.12/site-packages/anndata/_core/index.py:103, in _normalize_index(indexer, index)
+#     101         if np.any(positions < 0):
+#     102             not_found = indexer[positions < 0]
+# --> 103             raise KeyError(
+#     104                 f"Values {list(not_found)}, from {list(indexer)}, "
+#     105                 "are not valid obs/ var names or indices."
+#     106             )
+#     107         return positions  # np.ndarray[int]
+#     108 else:
+
+# KeyError: 'Values [nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, False, False, False, False, False, False, False, False, Fa
+
+
+
 
 def filter_invalid_proteins(
         adata, 

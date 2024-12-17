@@ -203,7 +203,7 @@ def plot_PCA_from_adata(adata, color_category, title_PCA="PCA", PC1=1, PC2=2):
         None
     """
 
-    if adata.uns.pca is None:
+    if adata.uns['pca'] is None:
         sc.tl.pca(adata, svd_solver='arpack')
 
     #obtain sample coordinates per PC chosen

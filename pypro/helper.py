@@ -43,8 +43,11 @@ def DIANN_to_adata( DIANN_path:str,
     #load DIANN output file
     df = pd.read_csv(DIANN_path, sep=DIANN_sep)
     #all rows, all columns except first 5 to remove metadata
-    rawdata = df.iloc[:,5:]
+    # TODO hard coding is an issue
+    rawdata = df.iloc[:,4:]
     rawdata = rawdata.transpose() #transpose to have samples as rows and proteins as columns
+
+    print("")
 
     logger.info("Step 2: Loading metadata file")
     sample_metadata = pd.read_csv(metadata_path, sep=metadata_sep) #load metadata file
@@ -55,7 +58,8 @@ def DIANN_to_adata( DIANN_path:str,
 
     sample_metadata.index = sample_metadata[sample_id_column] #set index to be the sample name, matching the rawdata index
     sample_metadata = sample_metadata.drop(sample_id_column, axis=1) #drop the name column, since it is now the index
-    assert rawdata.shape[0] == sample_metadata.shape[0], logger.error("ERROR: Number of samples in DIANN output and metadata file do not match. Please check your files.")
+    if not rawdata.shape[0] == sample_metadata.shape[0]:
+        logger.error(f"ERROR: Number of samples in DIANN output {rawdata.shape[0]} and metadata {sample_metadata.shape[0]} do not match. Please check your files.")
 
     if metadata_check:
         categorical_values_dict = {}
