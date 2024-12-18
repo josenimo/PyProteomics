@@ -340,7 +340,7 @@ import plotly.graph_objects as go
 import scanpy as sc
 sc.settings.verbosity = 1
 import plotly.io as pio
-import kaleido
+import nbformat
 
 def PCA_adata(adata, 
             color:str=None, 

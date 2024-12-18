@@ -30,6 +30,7 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
         adata_copy: AnnData object
             AnnData object with imputed values
     """
+    logger.info("Starting imputation with Gaussian distribution version 2.0.0")
 
     adata_copy = adata.copy()
     df = pd.DataFrame(data = adata_copy.X, columns = adata_copy.var.index, index = adata_copy.obs_names)
@@ -46,8 +47,8 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
     # Iterate over each column in the DataFrame
     for col in df.columns:
         # Calculate the mean and standard deviation for the column (protein values)
-        col_mean = df[col].mean()
-        col_std = df[col].std()
+        col_mean = df[col].mean(skipna=True)
+        col_std = df[col].std(skipna=True)
         # Identify NaN positions in the column
         nan_mask = df[col].isnull()
         num_nans = nan_mask.sum()
@@ -62,5 +63,6 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
         df = df.T
     
     adata_copy.X = df.values
+    logger.info(f'Number of missing values after imputation: {np.sum(np.isnan(adata_copy.X))}')
     logger.info("Imputation complete")
     return adata_copy

@@ -64,35 +64,40 @@ def filter_out_contaminants(
     Date: 17.11.2024
     """
 
+    #TODO hardcoding DIANN columns is an issue
+    
+    # as of 17.12.2024 DIANN outputs contamination string on the index
+
+
     logger.info("Filtering out contaminants")
     adata_copy = adata.copy()
 
-    condition = adata_copy.var[adata_var_column_with_label].str.contains(string_to_indicate_removal)
+    condition = adata_copy.var.index.str.contains(string_to_indicate_removal)
 
-    if len(keep_genes)>0 :
-        logger.info(f"Keeping {keep_genes} from being removed")
-        accumulated_boolean = np.zeros(adata_copy.var.shape[0], dtype=bool)
-        for gene in keep_genes:
-            logger.info(f"{gene} being kept")
-            match_boolean = adata.var["Genes"].str.contains(gene, na=False).values.astype(bool)
-            accumulated_boolean |= match_boolean
-            logger.info(f"Number of excluded contaminants: {accumulated_boolean.sum()}")
-        condition = np.where(condition & accumulated_boolean, False, condition)
+    # if len(keep_genes)>0 :
+    #     logger.info(f"Keeping {keep_genes} from being removed")
+    #     accumulated_boolean = np.zeros(adata_copy.var.shape[0], dtype=bool)
+    #     for gene in keep_genes:
+    #         logger.info(f"{gene} being kept")
+    #         match_boolean = adata.var["Genes"].str.contains(gene, na=False).values.astype(bool)
+    #         accumulated_boolean |= match_boolean
+    #         logger.info(f"Number of excluded contaminants: {accumulated_boolean.sum()}")
+    #     condition = np.where(condition & accumulated_boolean, False, condition)
 
     # filtered_out = adata_copy[:, condition].copy()
     # filtered_out.var["Species"] = filtered_out.var["Protein.Names"].str.split("_").str[-1]
 
-    if print_summary:
-        print("the following proteins were filtered out:")
-        print(tabulate.tabulate(
-            filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].values,
-            headers=["Genes","Protein.Names","Species"], 
-            tablefmt='psql',
-            showindex="always",
-            maxcolwidths=[20,20,20]))
+    # if print_summary:
+    #     print("the following proteins were filtered out:")
+    #     print(tabulate.tabulate(
+    #         filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].values,
+    #         headers=["Genes","Protein.Names","Species"], 
+    #         tablefmt='psql',
+    #         showindex="always",
+    #         maxcolwidths=[20,20,20]))
 
-    if qc_export_path:
-        filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(qc_export_path)
+    # if qc_export_path:
+    #     filtered_out.var.sort_values(by="Species")[["Genes","Protein.Names","Species"]].to_csv(qc_export_path)
     
     adata_copy = adata_copy[:, ~condition]
 

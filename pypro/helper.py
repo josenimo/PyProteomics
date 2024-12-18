@@ -52,7 +52,6 @@ def DIANN_to_adata( DIANN_path:str,
     logger.info("Step 2: Loading metadata file")
     sample_metadata = pd.read_csv(metadata_path, sep=metadata_sep) #load metadata file
     
-
     assert sample_id_column in sample_metadata.columns, f"ERROR: {sample_id_column} column not found in metadata file. Please check your files."
     assert sample_metadata[sample_id_column].nunique() == sample_metadata.shape[0], f"ERROR: {sample_id_column} has duplicates. I should not. Please check your files."
 
@@ -71,7 +70,7 @@ def DIANN_to_adata( DIANN_path:str,
         print("\n")
 
     logger.info("Step 3: Loading protein metadata")
-    protein_metadata = df.iloc[:,:5] #protein metadata
+    protein_metadata = df.iloc[:,:4] #protein metadata
     protein_metadata.index = protein_metadata["Protein.Group"] #set index to be the protein name, matching the rawdata index
     protein_metadata = protein_metadata.drop("Protein.Group", axis=1) #drop the name column, since it is now the index
     logger.info(f"For a total of {protein_metadata.shape[0]} proteins \n")
