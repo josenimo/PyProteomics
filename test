@@ -1,0 +1,15 @@
+├── JupyterNotebooks
+│   ├── Proteomics_for_SpatialData.ipynb
+├── LICENSE
+├── README.md
+├── pixi.lock
+├── pyproject.toml
+├── src
+│   └── pyproteomics
+│       ├── __init.py__
+│       ├── __pycache__
+│       ├── filtering.py
+│       ├── helper.py
+├── tests
+    ├── test_filtering.py
+    └── test_helper.py

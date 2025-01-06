@@ -7,13 +7,6 @@ from loguru import logger
 import tabulate
 
 datetime = time.strftime("%Y%m%d_%H%M%S")
-# from tabulate import tabulate
-# import shutil
-# import warnings
-# warnings.simplefilter(action='ignore', category=FutureWarning)
-# warnings.simplefilter(action='ignore', category=UserWarning)
-# warnings.simplefilter(action="ignore", category=RuntimeWarning)
-
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 sc.settings.verbosity = 1

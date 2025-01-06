@@ -24,8 +24,10 @@ ruff = ">=0.8.3,<0.9"
 pygments = ">=2.18.0,<3"
 pandas = ">=2.2.3,<3"
 anndata = ">=0.11.1,<0.12"
-numpy = ">=2.2.0,<3"
+numpy = "*"
 loguru = ">=0.7.2,<0.8"
+scanpy = "*"
+numba = "*"
 
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
@@ -36,3 +38,6 @@ test = "pytest"
 
 [dependency-groups]
 test = ["pytest"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["/src/pyproteomics/"]
