@@ -28,6 +28,7 @@ numpy = "*"
 loguru = ">=0.7.2,<0.8"
 scanpy = "*"
 numba = "*"
+tabulate = ">=0.9.0,<0.10"
 
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
@@ -39,5 +40,5 @@ test = "pytest"
 [dependency-groups]
 test = ["pytest"]
 
-[tool.hatch.build.targets.wheel]
-packages = ["/src/pyproteomics/"]
+# [tool.hatch.build.targets.wheel]
+# packages = ["/pyproteomics/"]

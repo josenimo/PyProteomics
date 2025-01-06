@@ -6,7 +6,7 @@ import time
 
 from loguru import logger
 
-import pyproteomics.helper
+from pyproteomics import helper
 import pytest
 
 def test_DIANN_to_adata():

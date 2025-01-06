@@ -6,8 +6,11 @@ import time
 
 from loguru import logger
 
-import PyProteomics.helper
-import PyProteomics.filtering
+# import pyproteomics
+# import helper
+# import filtering
+from pyproteomics import helper
+from pyproteomics import filtering
 import pytest
 
 def test_filter_proteins_without_genenames(): 
