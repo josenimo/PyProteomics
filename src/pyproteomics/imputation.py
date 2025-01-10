@@ -30,7 +30,10 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
         adata_copy: AnnData object
             AnnData object with imputed values
     """
-    logger.info("Starting imputation with Gaussian distribution version 2.0.0")
+
+    # Assert that imputated values are not negative, if so prompt user to change the mean_shift value
+
+    logger.info("Starting imputation with Gaussian distribution version 2.1")
 
     adata_copy = adata.copy()
     df = pd.DataFrame(data = adata_copy.X, columns = adata_copy.var.index, index = adata_copy.obs_names)
@@ -48,14 +51,15 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
     for col in df.columns:
         # Calculate the mean and standard deviation for the column (protein values)
         col_mean = df[col].mean(skipna=True)
-        col_std = df[col].std(skipna=True)
+        col_stddev = df[col].std(skipna=True)
         # Identify NaN positions in the column
         nan_mask = df[col].isnull()
-        num_nans = nan_mask.sum()
-        # Generate enough random values to replace the NaNs 
-        random_values = np.random.randn(num_nans)
-        # the mean is shifted by the mean shift value multiplied by the standard deviation
-        shifted_random_values = (col_mean+(mean_shift*col_std)) + (col_std*std_dev_shift) * random_values
+        num_nans = nan_mask.sum() 
+        # Generate random values from a normal distribution       
+        shifted_random_values = np.random.normal(
+            loc=(col_mean + (mean_shift * col_stddev)), 
+            scale=(col_stddev * std_dev_shift), 
+            size=num_nans)
         # Replace NaNs in the column with the generated random values
         df.loc[nan_mask, col] = shifted_random_values
 

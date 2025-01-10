@@ -5,7 +5,7 @@ import pandas as pd
 import scanpy as sc
 from loguru import logger
 import tabulate
-import rich
+# import rich
 
 datetime = time.strftime("%Y%m%d_%H%M%S")
 logger.remove()
