@@ -180,6 +180,7 @@ def filter_invalid_proteins(
 
     adata_copy = adata.copy()
 
+    #TODO hardcoding DIANN columns is an issue, what if Genes is in index
     df_proteins = pd.DataFrame(index=adata_copy.var_names, columns=["Genes"], data=adata_copy.var['Genes'])
     df_proteins['Genes'] = df_proteins['Genes'].astype(str)
     df_proteins.fillna({"Genes":'None'}, inplace=True)

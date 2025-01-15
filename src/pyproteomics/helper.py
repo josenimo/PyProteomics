@@ -37,6 +37,7 @@ def DIANN_to_adata( DIANN_path:str,
     """
 
     #TODO weird space between step 1 and step 2
+    #TODO consider by default placing Genes as index in adata.var
 
     logger.info("DIANN_to_adata function started (v2.0)")
 
