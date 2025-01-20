@@ -42,9 +42,8 @@ def DIANN_to_adata( DIANN_path:str,
     logger.info("DIANN_to_adata function started (v2.0)")
 
     logger.info("Step 1: Loading DIANN output file")
-    #load DIANN output file
     df = pd.read_csv(DIANN_path, sep=DIANN_sep)
-    #all rows, all columns except first 5 to remove metadata
+    # all rows, all columns except first 5 to remove metadata
     # TODO hard coding is an issue
     rawdata = df.iloc[:,4:]
     rawdata = rawdata.transpose() #transpose to have samples as rows and proteins as columns
@@ -53,24 +52,12 @@ def DIANN_to_adata( DIANN_path:str,
 
     logger.info("Step 2: Loading metadata file")
     sample_metadata = pd.read_csv(metadata_path, sep=metadata_sep) #load metadata file
-    
     assert sample_id_column in sample_metadata.columns, f"ERROR: {sample_id_column} column not found in metadata file. Please check your files."
     assert sample_metadata[sample_id_column].nunique() == sample_metadata.shape[0], f"ERROR: {sample_id_column} has duplicates. I should not. Please check your files."
-
     sample_metadata.index = sample_metadata[sample_id_column] #set index to be the sample name, matching the rawdata index
     sample_metadata = sample_metadata.drop(sample_id_column, axis=1) #drop the name column, since it is now the index
     if not rawdata.shape[0] == sample_metadata.shape[0]:
         logger.error(f"ERROR: Number of samples in DIANN output {rawdata.shape[0]} and metadata {sample_metadata.shape[0]} do not match. Please check your files.")
-
-    if metadata_check:
-        categorical_values_dict = {}
-        for column in sample_metadata.columns:
-            categorical_values_dict[column] = sample_metadata[column].unique().tolist()
-        data_list = [(key, value) for key, value in categorical_values_dict.items()]
-        print("Sample Metadata")
-        # TODO switch to RICH
-        # print(tabulate.tabulate(data_list, headers=["Column Name", "Unique Values"], tablefmt="grid"))
-        print("\n")
 
     logger.info("Step 3: Loading protein metadata")
     protein_metadata = df.iloc[:,:4] #protein metadata
@@ -84,20 +71,6 @@ def DIANN_to_adata( DIANN_path:str,
     print("\n")
 
     return adata
-
-def adata_to_DIANN(adata):
-
-
-    #TODO can improve this
-    
-    df_var = adata.var
-    df = pd.DataFrame(data=adata.X.T, index=adata.var_names, columns=adata.obs.index) 
-    df = pd.concat([df, df_var], axis=1)
-    column_order = ['Protein.Ids','Protein.Names', 'Genes', 'First.Protein.Description']
-    for sample_name in adata.obs.index:
-        column_order.append(sample_name)
-    df = df[column_order]
-    return df
 
 def switch_adat_var_index(adata, new_index):
     """
