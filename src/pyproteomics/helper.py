@@ -109,3 +109,26 @@ def remove_genelists_from_adata(adata, genes_index=True) -> ad.AnnData:
     adata_copy.var.index = [gene.split(";")[0] for gene in adata_copy.var.index.tolist()]
 
     return adata_copy
+
+def perseus_to_anndata(path_to_perseus_txt):
+    from perseuspy import pd
+    df = pd.read_perseus(path_to_perseus_txt)
+    # get obs headers
+    obs_headers = list(df.columns.names)
+    # get obs contents
+    obs = [col for col in df2.columns.values] #tuples
+    obs = pd.DataFrame(obs)
+    # var headers HARDCODED
+    var_headers = obs.iloc[-4:,0].values.tolist()
+    #remove rows with empty strings
+    obs = obs[obs != '']
+    obs.dropna(inplace=True)
+    #rename headers
+    obs.columns = obs_headers
+    #var 
+    var = df[var_headers]
+    var.columns = var_headers
+    #get data
+    data = df.iloc[:,:-(len(var_headers))].values.T
+    adata = ad.AnnData(X=data, obs=obs, var=var)
+    return adata
