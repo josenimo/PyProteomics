@@ -33,6 +33,8 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
             AnnData object with imputed values
     """
 
+    #TODO error if nan found in index, both np.nan and "nan"
+
     # Assert that imputated values are not negative, if so prompt user to change the mean_shift value
 
     logger.info("Starting imputation with Gaussian distribution version 2.1")
