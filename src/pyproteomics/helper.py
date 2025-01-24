@@ -60,7 +60,7 @@ def DIANN_to_adata( DIANN_path:str,
     protein_metadata = df.iloc[:,:n_of_protein_metadata_cols]
     protein_metadata['Genes_simplified'] = [gene.split(";")[0] for gene in protein_metadata['Genes'].tolist()]
     protein_metadata.index = protein_metadata['Genes_simplified']
-    print(f"{protein_metadata[protein_metadata['Genes'].str.contains(";")].shape[0]} gene lists (eg 'TMA7;TMA7B') were simplified to their first element ('TMA7').")
+    logger.info(f"{protein_metadata[protein_metadata['Genes'].str.contains(";")].shape[0]} gene lists (eg 'TMA7;TMA7B') were simplified to their first element ('TMA7').")
     protein_metadata.index.name = "Genes"
 
     #load sample metadata
@@ -80,6 +80,7 @@ def DIANN_to_adata( DIANN_path:str,
 
     # create adata object
     adata = ad.AnnData(X=rawdata.values, obs=sample_metadata_aligned, var=protein_metadata)
+    logger.success("Anndata object has been created :) ")
     return adata
 
 def perseus_to_anndata(path_to_perseus_txt):
