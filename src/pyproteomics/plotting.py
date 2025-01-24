@@ -523,3 +523,48 @@ def plot_pca_protein_loadings(adata):
     ax.set(xticklabels=[], yticklabels=[])
     ax.grid(False)
     plt.show()
+
+
+def complex_heatmap(adata, obs_keys):
+
+    from PyComplexHeatmap import HeatmapAnnotation, anno_simple, ClusterMapPlotter
+
+    #create dataframe to plot values
+    df2 = pd.DataFrame(data=adata.layers['zscored'], columns=adata.var_names, index=adata.obs['LCMS_run_id'])
+    df2t = df2.T
+
+    #create dataframe to labels categoricals
+    df_color = adata_copy.obs[['RCN_long', 'Biopsy_type']]
+
+    #create palettes
+    palette_RCN = sns.color_palette("Set2", len(df_color['RCN_long'].unique()))
+    palette_Biopsy_type = sns.color_palette("Set1", len(df_color['Biopsy_type'].unique()))
+
+    #create colormaps
+    color_map_RCN = dict(zip(df_color['RCN_long'].unique(), palette_RCN))
+    color_map_Biopsy_type = dict(zip(df_color['Biopsy_type'].unique(),palette_Biopsy_type))
+
+    plt.figure(figsize=(5, 8))
+
+    col_ha = HeatmapAnnotation(
+                    Cellular_Neighborhood=anno_simple(
+                        df_color['RCN_long'], add_text=False, colors=color_map_RCN,legend_kws={'frameon':False}),
+                    Biopsy_type=anno_simple(
+                        df_color['Biopsy_type'], add_text=False, colors=color_map_Biopsy_type,legend_kws={'frameon':False} )
+                            )
+
+    cm = ClusterMapPlotter(
+                    data=df2t, 
+                    top_annotation=col_ha,
+                    label='Zscored',
+                    row_dendrogram=True,
+                    show_rownames=False,
+                    show_colnames=False,
+                    # tree_kws={'row_cmap': 'Dark2'},
+                    cmap='seismic', 
+                    vmax=3, vmin=-3, center=0,
+                    legend_gap=5,
+                    legend_hpad=2,
+                    legend_vpad=5)
+
+    plt.show()
