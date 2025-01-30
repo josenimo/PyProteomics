@@ -59,13 +59,14 @@ def filter_invalid_proteins(
 
         for group in adata.obs[grouping].unique():
             adata_group = adata[adata.obs[grouping] == group]
-            logger.info(f"  {group} has {adata_group.shape[0]} samples and {adata_group.shape[1]} proteins")
-            df_proteins[f"{group}_mean"]            = np.nanmean(adata_group.X, axis=0).round(3)    
-            df_proteins[f'{group}_nan_count']       = np.isnan(adata_group.X).sum(axis=0)
-            df_proteins[f'{group}_valid_count']     = (~np.isnan(adata_group.X)).sum(axis=0)
-            df_proteins[f'{group}_nan_proportions'] = np.isnan(adata_group.X).mean(axis=0).round(3)
+            logger.info(f" {group} has {adata_group.shape[0]} samples and {adata_group.shape[1]} proteins") 
+            
+            X = adata_group.X.astype('float64')
+            df_proteins[f"{group}_mean"]            = np.nanmean(X, axis=0).round(3)    
+            df_proteins[f'{group}_nan_count']       = np.isnan(X).sum(axis=0)
+            df_proteins[f'{group}_valid_count']     = (~np.isnan(X)).sum(axis=0)
+            df_proteins[f'{group}_nan_proportions'] = np.isnan(X).mean(axis=0).round(3)
             df_proteins[f'{group}_valid']           = df_proteins[f'{group}_nan_proportions'] < (1.0 - threshold)   
-        
         
         df_proteins['valid_in_all'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].all(axis=1)
         df_proteins['valid_in_any'] = df_proteins[[f'{group}_valid' for group in adata.obs[grouping].unique()]].any(axis=1)

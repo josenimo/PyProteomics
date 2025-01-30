@@ -274,7 +274,14 @@ def PCA_comparison(adata1, adata2, color, categorical=False):
     
     plt.show()
 
-def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=True, FDR=None, tag_top=None, group1=None, group2=None):
+def plot_volcano_v2(adata, 
+                    x="log2_FC", 
+                    y="-log10(p_val_corr)_BH", 
+                    significant=True, 
+                    FDR=None, 
+                    tag_top=None, 
+                    group1=None, 
+                    group2=None):
     
     adata_copy = adata.copy()
 
@@ -298,42 +305,26 @@ def plot_volcano_v2(adata, x="log2_FC", y="-log10(p_val_corr)_BH", significant=T
 
         # create texts for labelling top proteins on the left side of the x axis
         df_left = df[df[y] < 0]
-        texts_left = [plt.text(df_left[x][i], df_left[y][i], df_left.Genes[i], ha='right', va='center') for i in range(df_left.shape[0])]
+        texts_left = [plt.text(df_left[x][i], df_left[y][i], df_left.index[i], ha='right', va='center', fontdict={"fontsize":"x-small"}) for i in range(df_left.shape[0])]
 
         adjust_text(texts_left,
-        lim=500, 
-        expand_points=(1.2, 1.2),
-        # expand_text=(1.2, 1.2),
-        # force_text=(1,0.5),
-        # only_move={'points':'-x', 'text':'-x', 'objects':'-x'},
-        # precision=0.1,
-        arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=.5)
-        )
-
+            lim=500, 
+            expand_points=(1.2, 1.2),
+            arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=.5)
+            )
 
         df_right = df[df[y] > 0]
-        texts_right = [plt.text(df_right[x][i], df_right[y][i], df_right.Genes[i], ha='right', va='center') for i in range(df_right.shape[0])]
+        texts_right = [plt.text(df_right[x][i], df_right[y][i], df_right.index[i], ha='right', va='center', fontdict={"fontsize":"x-small"}) for i in range(df_right.shape[0])]
 
         adjust_text(texts_right, 
-        lim=500, 
-        expand_points=(1.2, 1.2),
-        # expand_text=(1.2, 1.2),
-        # force_text=(1,0.5),
-        arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=.5)
-        )
+            lim=500, 
+            expand_points=(1.2, 1.2),
+            arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=.5)
+            )
 
-        # Create custom legend handles
-        # legend_elements = [Patch(facecolor='red', edgecolor='black', label='significant')] 
-    
-    #create a vertical line at x=0
     plt.axvline(x=0, color='black', linestyle='--', linewidth=1, alpha=0.2)
-    #remove grid
     plt.grid(False)
-    # plt.xlim(-6, 6)    # Add a legend with custom handles
-    # plt.legend(handles=legend_elements, loc="upper right")
     plt.show()
-
-    #TODO add 
 
 import plotly.express as px
 import plotly.graph_objects as go
