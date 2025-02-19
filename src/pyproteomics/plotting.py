@@ -298,14 +298,15 @@ def plot_volcano_v2(adata,
         df = df[df["p_val_corr_BH"] < FDR]
         plt.scatter(x=df[x], y=df[y], color="red")
 
-        if df.shape[0] > 30:
-            df = df.sort_values(by=y, ascending=False)[:30] #top 30 maximum labels
-        
-        # texts = [plt.text(df[x][i], df[y][i], df.Genes[i], ha='center', va='center') for i in range(df.shape[0])]
+        if tag_top:
+            if df.shape[0] > tag_top:
+                df = df.sort_values(by=y, ascending=False)[:tag_top]
+            else:
+                df = df.sort_values(by=y, ascending=False)
 
         # create texts for labelling top proteins on the left side of the x axis
         df_left = df[df[y] < 0]
-        texts_left = [plt.text(df_left[x][i], df_left[y][i], df_left.index[i], ha='right', va='center', fontdict={"fontsize":"x-small"}) for i in range(df_left.shape[0])]
+        texts_left = [plt.text(df_left[x][i], df_left[y][i], df_left.index[i], ha='right', va='center', fontdict={"fontsize":8}) for i in range(df_left.shape[0])]
 
         adjust_text(texts_left,
             lim=500, 
@@ -314,7 +315,7 @@ def plot_volcano_v2(adata,
             )
 
         df_right = df[df[y] > 0]
-        texts_right = [plt.text(df_right[x][i], df_right[y][i], df_right.index[i], ha='right', va='center', fontdict={"fontsize":"x-small"}) for i in range(df_right.shape[0])]
+        texts_right = [plt.text(df_right[x][i], df_right[y][i], df_right.index[i], ha='right', va='center', fontdict={"fontsize":8}) for i in range(df_right.shape[0])]
 
         adjust_text(texts_right, 
             lim=500, 

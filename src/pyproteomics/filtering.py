@@ -2,16 +2,12 @@ import os, sys, time
 import anndata as ad
 import numpy as np
 import pandas as pd
-import scanpy as sc
 from loguru import logger
-import tabulate
 import warnings
 
 datetime = time.strftime("%Y%m%d_%H%M%S")
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
-sc.settings.verbosity = 1
-sc.set_figure_params(dpi=150)
 
 def filter_invalid_proteins(
         adata, 

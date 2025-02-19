@@ -38,6 +38,11 @@ def DIANN_to_adata( DIANN_path:str,
     filter_nan_genes: default True, removes variable rows that contain NaN in the 'Genes' column, good for downstream
     """
 
+    #ISSUE
+    # ValueError: DataFrame.index.name ('Genes') is also used by a column whose values are different. This is not supported. Please make sure the values are the same, or use a different name.
+    # Error raised while writing key 'var' of <class 'h5py._hl.group.Group'> to /
+
+
     df = pd.read_csv(DIANN_path, sep=DIANN_sep)
     logger.info(f"Starting DIANN matrix shape {df.shape}")
     if filter_contamination:
@@ -61,7 +66,7 @@ def DIANN_to_adata( DIANN_path:str,
     protein_metadata['Genes_simplified'] = [gene.split(";")[0] for gene in protein_metadata['Genes'].tolist()]
     protein_metadata.index = protein_metadata['Genes_simplified']
     logger.info(f"{protein_metadata[protein_metadata['Genes'].str.contains(";")].shape[0]} gene lists (eg 'TMA7;TMA7B') were simplified to their first element ('TMA7').")
-    protein_metadata.index.name = "Genes"
+    protein_metadata.index.name = "Gene" #changed index name to Gene, instead of Genes to avoid conflicts writing the data
 
     #load sample metadata
     sample_metadata = pd.read_csv(metadata_path, sep=metadata_sep)
@@ -71,7 +76,11 @@ def DIANN_to_adata( DIANN_path:str,
     sample_metadata = sample_metadata.drop(metadata_filepath_header, axis=1)
 
     # check sample_metadata filename_paths are unique, and matches df
-    assert set(sample_metadata.index) == set(rawdata.index), "unique values from sample metadata and DIANN table do not match"
+    if not set(sample_metadata.index) == set(rawdata.index): 
+        logger.info("unique values from sample metadata and DIANN table do not match")
+        logger.info("consider double checking 'n_of_protein_metadata_cols', it varies per DIANN version")
+        raise ValueError
+    
     if not rawdata.shape[0] == sample_metadata.shape[0]:
         logger.error(f"ERROR: Number of samples in DIANN output {rawdata.shape[0]} and metadata {sample_metadata.shape[0]} do not match. Please check your files.")
 
@@ -79,7 +88,7 @@ def DIANN_to_adata( DIANN_path:str,
     sample_metadata_aligned = sample_metadata.reindex(rawdata.index)
 
     # create adata object
-    adata = ad.AnnData(X=rawdata.values, obs=sample_metadata_aligned, var=protein_metadata)
+    adata = ad.AnnData(X=rawdata.values.astype(np.float64), obs=sample_metadata_aligned, var=protein_metadata)
     logger.success("Anndata object has been created :) ")
     return adata
 
