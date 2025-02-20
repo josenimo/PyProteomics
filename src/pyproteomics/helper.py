@@ -77,9 +77,9 @@ def DIANN_to_adata( DIANN_path:str,
 
     # check sample_metadata filename_paths are unique, and matches df
     if not set(sample_metadata.index) == set(rawdata.index): 
-        logger.info("unique values from sample metadata and DIANN table do not match")
-        logger.info("consider double checking 'n_of_protein_metadata_cols', it varies per DIANN version")
-        raise ValueError
+        logger.warning("unique values from sample metadata and DIANN table do not match")
+        logger.warning("consider double checking 'n_of_protein_metadata_cols', it varies per DIANN version")
+        raise ValueError("uniques don't match")
     
     if not rawdata.shape[0] == sample_metadata.shape[0]:
         logger.error(f"ERROR: Number of samples in DIANN output {rawdata.shape[0]} and metadata {sample_metadata.shape[0]} do not match. Please check your files.")
