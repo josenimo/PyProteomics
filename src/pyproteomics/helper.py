@@ -38,11 +38,6 @@ def DIANN_to_adata( DIANN_path:str,
     filter_nan_genes: default True, removes variable rows that contain NaN in the 'Genes' column, good for downstream
     """
 
-    #ISSUE
-    # ValueError: DataFrame.index.name ('Genes') is also used by a column whose values are different. This is not supported. Please make sure the values are the same, or use a different name.
-    # Error raised while writing key 'var' of <class 'h5py._hl.group.Group'> to /
-
-
     df = pd.read_csv(DIANN_path, sep=DIANN_sep)
     logger.info(f"Starting DIANN matrix shape {df.shape}")
     if filter_contamination:

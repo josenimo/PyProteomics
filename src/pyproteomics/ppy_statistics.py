@@ -72,12 +72,9 @@ def Ttest_adata(adata, grouping, group1, group2, FDR_threshold=0.05):
     
     #loop through each protein
     for column in adata_copy.var.index:
-
         array_1 = np.array(adata_copy[adata_copy.obs[grouping] == group1].X[:, adata_copy.var.index == column].flatten(), dtype=np.float64)
         array_2 = np.array(adata_copy[adata_copy.obs[grouping] == group2].X[:, adata_copy.var.index == column].flatten(), dtype=np.float64)
-
         result = pg.ttest(x=array_1, y=array_2, paired=False, alternative="two-sided", correction=False, r=0.707)
-
         t_values.append(result.iloc[0,0])
         p_values.append(result.iloc[0,3])
         FC.append(np.mean(array_1) - np.mean(array_2))

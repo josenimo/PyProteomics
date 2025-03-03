@@ -560,3 +560,28 @@ def complex_heatmap(adata, obs_keys):
                     legend_vpad=5)
 
     plt.show()
+
+
+## Plot density curves between two groups, for specific genes/proteins
+
+# # plot 25 proteins in a 5,5 grid
+# n = 25
+# n_cols = 5
+# n_rows = 5
+# fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15), constrained_layout=True)
+# axes = axes.flatten()
+
+# # Randomly select 25 proteins
+# adata_RCN1_check = adata_RCN1[:, (adata_RCN1.var['-log10(p_val_corr)_BH']>5) & (adata_RCN1.var['-log10(p_val_corr)_BH']<15)]
+# df = pd.DataFrame(data=adata_RCN1_check.X, columns=adata_RCN1_check.var_names, index=adata_RCN1_check.obs['Biopsy_type'])
+# random_columns = np.random.choice(df.columns, n, replace=False)
+# df_subset = df[random_columns]
+
+# for i, col in enumerate(df_subset.columns):
+#     df_tmp = df_subset[[col]]
+#     df_tmp.reset_index(inplace=True)
+#     sns.kdeplot(data=df_subset, x=col, hue="Biopsy_type", ax=axes[i])
+#     axes[i].set_title(col)
+#     axes[i].set_xlabel("")
+#     axes[i].set_ylabel("")
+#     axes[i].legend_.remove()
