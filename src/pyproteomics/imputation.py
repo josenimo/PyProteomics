@@ -33,7 +33,8 @@ def gaussian(adata, mean_shift=-1.8, std_dev_shift=0.3, perSample=False, qc_expo
             AnnData object with imputed values
     """
 
-    #TODO error if nan found in index, both np.nan and "nan"
+    # TODO error if nan found in index, both np.nan and "nan"
+    # TODO warn user when data is in linear space, could lead to negative values
 
     # Assert that imputated values are not negative, if so prompt user to change the mean_shift value
 
