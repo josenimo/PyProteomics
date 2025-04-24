@@ -34,6 +34,8 @@ def filter_invalid_proteins(
         adata: anndata object, filtered
     """
 
+    # TODO let users decide on an absolute number of valid values
+
     logger.info(f"Filtering protein without atleast {threshold*100}% valid values in {valid_in_ANY_or_ALL_groups} group")
 
     import warnings #for numpy mean of empty slice, which is expected
