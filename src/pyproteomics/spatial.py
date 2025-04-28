@@ -226,3 +226,80 @@ def run_spatial_autocorrelation_v2(
         )
 
     logger.success(f"Finished spatial autocorrelation ({method.upper()}) computation.")
+
+
+def hyperparameter_search_threshold(adata, x_y=['x_centroid', 'y_centroid'], threshold_range=np.arange(1, 100, 1), loguru_logger=None, return_df=False):
+    """
+    Perform a hyperparameter search over a range of threshold values to determine the number of connected nodes and average neighbors
+    for different threshold values.
+
+    Parameters:
+    - adata : AnnData object
+        Spatially indexed data.
+    - x_y : list of str, optional (default=['x_centroid', 'y_centroid'])
+        Column names in adata.obs representing the spatial coordinates.
+    - threshold_range : array-like, optional (default=np.arange(1, 100, 1))
+        Range of threshold values to test.
+    - loguru_logger : logger, optional
+        Loguru logger for logging information during the process.
+
+    Returns:
+    - threshold_stats : pandas.DataFrame
+        Dataframe containing statistics for each threshold value:
+        - 'threshold': Threshold value.
+        - 'num_connected_nodes': Number of nodes that are connected (not islands).
+        - 'avg_neighbors': Average number of neighbors per sample.
+    - fig, ax : matplotlib Figure and Axes
+        Plot showing the relationship between threshold, number of connected nodes, and average neighbors.
+    """
+
+    # Initialize a list to store the stats for each threshold
+    stats = []
+
+    coords = adata.obs[x_y].values
+
+    for threshold in threshold_range:
+        # Compute the spatial weights for each threshold
+        w = DistanceBand.from_array(coords, threshold=threshold, binary=True)
+
+        # Calculate the number of connected nodes (not islands)
+        num_connected_nodes = sum([len(w.neighbors[i]) > 0 for i in range(len(coords))])
+
+        # Calculate the average number of neighbors
+        avg_neighbors = np.mean([len(w.neighbors[i]) for i in range(len(coords))])
+
+        stats.append({
+            'threshold': threshold,
+            'num_connected_nodes': num_connected_nodes,
+            'avg_neighbors': avg_neighbors
+        })
+
+        # Log the threshold being processed if logger is provided
+        if loguru_logger:
+            loguru_logger.info(f"Processed threshold {threshold}, connected nodes: {num_connected_nodes}, avg neighbors: {avg_neighbors}")
+
+    # Convert the stats list to a DataFrame
+    threshold_stats = pd.DataFrame(stats)
+
+    # Plot the results
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Plot number of connected nodes on primary axis
+    ax1.plot(threshold_stats['threshold'], threshold_stats['num_connected_nodes'], 'b-', label='Connected Nodes')
+    ax1.set_xlabel('Threshold')
+    ax1.set_ylabel('Number of Connected Nodes', color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
+
+    # Plot average number of neighbors on secondary axis
+    ax2 = ax1.twinx()
+    ax2.plot(threshold_stats['threshold'], threshold_stats['avg_neighbors'], 'r-', label='Avg Neighbors')
+    ax2.set_ylabel('Average Number of Neighbors', color='r')
+    ax2.tick_params(axis='y', labelcolor='r')
+
+    # Set title and show plot
+    plt.title("Hyperparameter Search: Threshold vs Connected Nodes and Avg Neighbors")
+    fig.tight_layout()
+    plt.show()
+
+    if return_df:
+        return threshold_stats
