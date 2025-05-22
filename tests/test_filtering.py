@@ -10,7 +10,7 @@ from loguru import logger
 # import helper
 # import filtering
 from pyproteomics import helper
-from pyproteomics import filtering
+from pyproteomics.filtering import filtering
 import pytest
 
 def test_filter_proteins_without_genenames(): 
