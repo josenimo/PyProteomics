@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from libpysal.weights import DistanceBand
 from pyproteomics.plotting.plot_graph_network import plot_graph_network
 
-def hyperparameter_search_threshold(adata, x_y=['x_centroid', 'y_centroid'], threshold_range=np.arange(1, 100, 1), loguru_logger=None, return_df=False, plot_network_at=None):
+def hyperparameter_search(adata, x_y=['x_centroid', 'y_centroid'], threshold_range=np.arange(1, 100, 1), loguru_logger=None, return_df=False, plot_network_at=None):
     """
     Perform a hyperparameter search over a range of threshold values to determine the number of connected nodes and average neighbors
     for different threshold values, and optionally plot the network of connected nodes at a given threshold.
@@ -85,4 +85,5 @@ def hyperparameter_search_threshold(adata, x_y=['x_centroid', 'y_centroid'], thr
     fig.tight_layout()
 
     if return_df:
-        threshold_stats
+        return threshold_stats, (fig, ax1)
+    return (fig, ax1)
