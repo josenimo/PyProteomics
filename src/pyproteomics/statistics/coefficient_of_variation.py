@@ -1,4 +1,3 @@
-
 import numpy as np
 
 def coefficient_of_variation(df, axis=0, nan_policy='propagate'):
