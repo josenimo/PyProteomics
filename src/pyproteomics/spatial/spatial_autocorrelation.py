@@ -72,7 +72,10 @@ def spatial_autocorrelation(
                 result = esda.moran.Moran(feature_values, w)
             elif method.lower() == "geary":
                 result = esda.geary.Geary(feature_values, w)
+            else:
+                raise ValueError("Method must be 'moran' or 'geary'.")
             results.append(result)
+            
         except Exception as e:
             results.append(np.nan)
             failed_genes.append(gene)
