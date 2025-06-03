@@ -9,10 +9,25 @@ from loguru import logger
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 
-def nan_difference(array1, array2):
+def nan_difference(
+    array1: np.ndarray,
+    array2: np.ndarray
+) -> None:
     """
     Calculate how many NaNs do not match between two arrays.
     Good quality control, since this can happen.
+
+    Parameters
+    ----------
+    array1 : np.ndarray
+        First array to compare.
+    array2 : np.ndarray
+        Second array to compare. Must have the same shape as array1.
+
+    Returns
+    -------
+    None
+        Prints the number and percentage of mismatched NaNs.
     """
     assert array1.shape == array2.shape
     total = array1.shape[0] * array1.shape[1]

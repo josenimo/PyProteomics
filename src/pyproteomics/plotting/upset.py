@@ -1,3 +1,4 @@
+from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 from anndata import AnnData
@@ -9,8 +10,10 @@ def plot_upset_from_adata(
     groupby: str,
     threshold: float = 0.0,
     min_presence_fraction: float = 0.0,
-    sort_by = "cardinality",
-):
+    sort_by: str = "cardinality",
+    figsize: Optional[Tuple[int, int]] = (10, 6),
+    show: bool = True
+) -> plt.Figure:
     """
     Generate an UpSet plot from an AnnData object based on variable presence across groups.
 
@@ -30,14 +33,16 @@ def plot_upset_from_adata(
         Minimum fraction of samples (within a group) where a variable must be present
         for that group to consider the variable as "present". Value between 0.0 and 1.0. Default is 0.0.
     sort_by : str, optional
-        potential sorters cardinality, degree, -cardinality, -degree
+        Sorter for UpSet plot: cardinality, degree, -cardinality, -degree
     figsize : tuple, optional
         Size of the UpSet plot figure. Default is (10, 6).
+    show : bool, optional
+        Whether to call plt.show(). Default is True.
 
     Returns
     -------
-    matplotlib.axes.Axes
-        The matplotlib Axes object containing the UpSet plot.
+    matplotlib.figure.Figure
+        The matplotlib Figure object containing the UpSet plot.
 
     Example
     -------
@@ -67,11 +72,11 @@ def plot_upset_from_adata(
     # Convert to UpSet input format
     upset_data = from_indicators(grouped_presence)
     upset = UpSet(upset_data, subset_size='count', sort_by=sort_by)
-
     axes_dict = upset.plot()
-    plt.tight_layout()
-    plt.show()
-
-    # Get the figure from one of the axes
     fig = list(axes_dict.values())[0].figure
+
+    if show:
+        plt.tight_layout()
+        plt.show()
+    
     return fig
