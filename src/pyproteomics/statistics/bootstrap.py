@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm.notebook import tqdm
+from pyproteomics.statistics.coefficient_of_variation import coefficient_of_variation
 
 def bootstrap_variability(
     dataframe,
@@ -14,6 +15,7 @@ def bootstrap_variability(
     plot=True,
     random_seed=42,
     nan_policy="omit",
+    cv_threshold=None,  # New argument for threshold-based summary
 ):
 
     """
@@ -33,8 +35,11 @@ def bootstrap_variability(
         Number of bootstrap replicates to perform for each subset size.
     subset_sizes : list of int, optional (default=[10, 50, 100])
         List of subset sizes (number of rows to sample) to use during the bootstrapping.
-    summary_func : callable, optional (default=np.mean)
+    summary_func : callable or str, optional (default=np.mean)
         Function to aggregate the per-feature CVs across bootstraps. For example, np.mean, np.median, etc.
+        If set to "count_above_threshold", counts the number of CVs above `cv_threshold` for each feature.
+    cv_threshold : float or None, optional (default=None)
+        Threshold for counting CVs above this value when summary_func is "count_above_threshold".
     return_raw : bool, optional (default=True)
         If True, returns the raw bootstrapped CVs in long format.
     return_summary : bool, optional (default=True)
@@ -91,7 +96,7 @@ def bootstrap_variability(
     for size in tqdm(subset_sizes, desc="Subset sizes"):
         feature_cv_list = []
         for i in tqdm(range(n_bootstrap), desc=f"Bootstraps (n={size})", leave=False):
-            subset = dataframe.sample(n=size, replace=False, random_state=rng.integers(0, 1e9))
+            subset = dataframe.sample(n=size, replace=False, random_state=rng.integers(0, int(1e9)))
             cv = coefficient_of_variation(subset, axis=0, nan_policy=nan_policy)  # Series
             feature_cv_list.append(cv.rename(f"bootstrap_{i+1}"))
 
@@ -112,19 +117,33 @@ def bootstrap_variability(
     results_df = pd.concat(all_feature_results, ignore_index=True)
 
     # Summarize
-    summary_df = (
-        results_df.groupby(['subset_size', 'feature'])['cv']
-        .agg(summary_func)
-        .reset_index()
-        .rename(columns={'cv': 'cv_summary'})
-    )
+    if summary_func == "count_above_threshold":
+        if cv_threshold is None:
+            raise ValueError("cv_threshold must be set when using 'count_above_threshold' as summary_func.")
+        summary_df = (
+            results_df.groupby(['subset_size', 'feature'])['cv']
+            .apply(lambda x: (x > cv_threshold).sum())
+            .reset_index()
+            .rename(columns={'cv': 'cv_count_above_threshold'})
+        )
+    else:
+        summary_df = (
+            results_df.groupby(['subset_size', 'feature'])['cv']
+            .agg(summary_func)
+            .reset_index()
+            .rename(columns={'cv': 'cv_summary'})
+        )
 
     if plot:
         plt.figure(figsize=(8, 5))
-        sns.violinplot(data=summary_df, x="subset_size", y="cv_summary")
+        if summary_func == "count_above_threshold":
+            sns.violinplot(data=summary_df, x="subset_size", y="cv_count_above_threshold")
+            plt.ylabel(f"Count of CV > {cv_threshold} per feature")
+        else:
+            sns.violinplot(data=summary_df, x="subset_size", y="cv_summary")
+            plt.ylabel(f"{summary_func.__name__.capitalize()} CV per feature")
         plt.title("Bootstrap variability across subset sizes")
         plt.xlabel("Subset size")
-        plt.ylabel(f"{summary_func.__name__.capitalize()} CV per feature")
         plt.tight_layout()
         plt.show()
 
