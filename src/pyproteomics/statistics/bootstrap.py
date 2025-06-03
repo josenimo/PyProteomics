@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm.notebook import tqdm
 
 def bootstrap_variability(
     dataframe,

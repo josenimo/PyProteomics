@@ -1,11 +1,13 @@
 import anndata as ad
 import pandas as pd
-import decoupler as dc
 import numpy as np
+import decoupler as dc
 import scanpy as sc
 import seaborn as sns
 import matplotlib.pyplot as plt
-import time,os,sys
+import time
+import os
+import sys
 
 # helper functions
 def get_datetime():

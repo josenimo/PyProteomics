@@ -3,6 +3,8 @@ date = datetime.now().strftime("%Y%m%d")
 
 import anndata as ad
 import numpy as np
+import pandas as pd
+from scipy import stats
 import pingouin as pg
 import statsmodels.stats.multitest
 

@@ -1,11 +1,13 @@
-import os, sys
+import os
+import sys
 import pandas as pd
 import numpy as np
 import anndata as ad
 import time
+from loguru import logger
+
 datetime = time.strftime("%Y%m%d_%H%M%S")
 
-from loguru import logger
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 
