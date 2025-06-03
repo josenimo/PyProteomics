@@ -1,3 +1,5 @@
+from typing import List
+import anndata as ad
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -6,13 +8,13 @@ import esda
 from loguru import logger
 
 def spatial_autocorrelation(
-    adata,
-    method="moran",
-    x_y=['x_centroid', 'y_centroid'],
-    k=8,
-    threshold=10,
-    island_threshold=0.1,
-):
+    adata: ad.AnnData,
+    method: str = "moran",
+    x_y: List[str] = ["x_centroid", "y_centroid"],
+    k: int = 8,
+    threshold: float = 10.0,
+    island_threshold: float = 0.1
+) -> None:
     """
     Compute spatial autocorrelation statistics (Moran's I or Geary's C) for each gene in an AnnData object,
     with automatic threshold search if too many islands (disconnected samples) are detected.
@@ -21,20 +23,21 @@ def spatial_autocorrelation(
     ----------
     adata : AnnData
         Annotated data matrix where observations are cells and variables are genes.
-    method : str, optional
+    method : {'moran', 'geary'}, default 'moran'
         Spatial statistic to compute: 'moran' or 'geary'.
-    x_y : list of str, optional
+    x_y : list of str, default ['x_centroid', 'y_centroid']
         Names of columns in `adata.obs` containing spatial coordinates.
-    k : int, optional
+    k : int, default 8
         Number of neighbors for Moran's I (ignored for Geary's C).
-    threshold : float, optional
+    threshold : float, default 10.0
         Distance threshold for neighbors for Geary's C (ignored for Moran's I).
-    island_threshold : float, optional
+    island_threshold : float, default 0.1
         If more than this fraction of samples are islands (no neighbors), hyperparameter search is triggered.
 
     Returns
     -------
     None
+        Results are added to adata.var in-place.
     """
 
     logger.info(f"Starting spatial autocorrelation: {method.upper()}")
@@ -66,7 +69,7 @@ def spatial_autocorrelation(
 
     logger.info(f"Starting calculation for {adata.n_vars} genes")
     for gene in tqdm(adata.var.index, desc=f"Running {method.title()}", leave=True):
-        feature_values = adata[:, gene].X.flatten()
+        feature_values = np.asarray(adata[:, gene].X).flatten()
         try:
             if method.lower() == "moran":
                 result = esda.moran.Moran(feature_values, w)

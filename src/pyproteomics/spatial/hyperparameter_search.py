@@ -1,34 +1,46 @@
+from typing import List, Optional, Tuple, Any
+import anndata as ad
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from libpysal.weights import DistanceBand
 from pyproteomics.plotting.plot_graph_network import plot_graph_network
 
-def hyperparameter_search(adata, x_y=['x_centroid', 'y_centroid'], threshold_range=np.arange(1, 100, 1), loguru_logger=None, return_df=False, plot_network_at=None):
+def hyperparameter_search(
+    adata: ad.AnnData,
+    x_y: List[str] = ["x_centroid", "y_centroid"],
+    threshold_range: np.ndarray = np.arange(1, 100, 1),
+    loguru_logger: Optional[Any] = None,
+    return_df: bool = False,
+    plot_network_at: Optional[int] = None
+) -> Any:
     """
     Perform a hyperparameter search over a range of threshold values to determine the number of connected nodes and average neighbors
     for different threshold values, and optionally plot the network of connected nodes at a given threshold.
 
-    Parameters:
-    - adata : AnnData object
+    Parameters
+    ----------
+    adata : AnnData
         Spatially indexed data.
-    - x_y : list of str, optional (default=['x_centroid', 'y_centroid'])
+    x_y : list of str, default ['x_centroid', 'y_centroid']
         Column names in adata.obs representing the spatial coordinates.
-    - threshold_range : array-like, optional (default=np.arange(1, 100, 1))
+    threshold_range : np.ndarray, default np.arange(1, 100, 1)
         Range of threshold values to test.
-    - loguru_logger : logger, optional
+    loguru_logger : Optional[logger], default None
         Loguru logger for logging information during the process.
-    - plot_network_at : int or None, optional (default=None)
+    return_df : bool, default False
+        If True, return the DataFrame with threshold statistics along with the plot.
+    plot_network_at : Optional[int], default None
         The threshold value at which to plot the network of connected nodes. If None, no plot is generated.
 
-    Returns:
-    - threshold_stats : pandas.DataFrame
-        Dataframe containing statistics for each threshold value:
-        - 'threshold': Threshold value.
-        - 'num_connected_nodes': Number of nodes that are connected (not islands).
-        - 'avg_neighbors': Average number of neighbors per sample.
-    - fig, ax : matplotlib Figure and Axes
-        Plot showing the relationship between threshold, number of connected nodes (percentage), and average neighbors.
+    Returns
+    -------
+    If return_df is True:
+        tuple[pandas.DataFrame, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]
+            DataFrame with threshold statistics and the plot (figure, axes).
+    Else:
+        tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]
+            The plot (figure, axes).
     """
     
     # Initialize a list to store the stats for each threshold
