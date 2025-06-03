@@ -5,13 +5,12 @@ from anndata import AnnData
 from upsetplot import UpSet, from_indicators
 import matplotlib.pyplot as plt
 
-def plot_upset_from_adata(
+def upset(
     adata: AnnData,
     groupby: str,
     threshold: float = 0.0,
     min_presence_fraction: float = 0.0,
     sort_by: str = "cardinality",
-    figsize: Optional[Tuple[int, int]] = (10, 6),
     show: bool = True
 ) -> plt.Figure:
     """

@@ -1,18 +1,22 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from adjustText import adjust_text
+from anndata import AnnData
+from typing import Optional, List, Dict, Any
+from matplotlib.figure import Figure
 
-def plot_rank_plot(
-    adata,
+def rankplot(
+    adata: AnnData,
     adata_obs_key: str,
-    groups: list,
-    proteins_to_label: list = None,
-    group_colors: dict = None,
-    group_offset: dict = None,
+    groups: List[str],
+    proteins_to_label: Optional[List[str]] = None,
+    group_colors: Optional[Dict[str, str]] = None,
+    group_offset: Optional[Dict[str, float]] = None,
     return_fig: bool = False,
-    ):
+    ax: Optional[Any] = None,
+    **kwargs
+) -> Optional[Figure]:
     """
     Plot a rank plot of average protein abundance in an AnnData object.
 
@@ -32,16 +36,30 @@ def plot_rank_plot(
         Dictionary mapping group names to x-axis offset (for shifting lines).
     return_fig : bool, optional
         If True, returns the matplotlib figure object for further customization.
+    ax : matplotlib.axes.Axes, optional
+        Axes object to plot on. If None, a new figure and axes are created.
+    **kwargs
+        Additional keyword arguments passed to matplotlib plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure or None
+        The figure object if return_fig is True, otherwise None.
     """
-    fig, ax = plt.subplots(figsize=(10, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 6))
+    else:
+        fig = ax.figure
     texts = []
 
     for group in groups:
         color = group_colors[group] if group_colors and group in group_colors else None
         offset = group_offset[group] if group_offset and group in group_offset else 0
 
-        group_mask = adata.obs[adata_obs_key] == group
-        mean_vals = adata[group_mask].X.mean(axis=0).A1 if hasattr(adata.X, "A1") else np.array(adata[group_mask].X.mean(axis=0)).flatten()
+        # Use numpy array for boolean mask
+        group_mask = np.asarray(adata.obs[adata_obs_key] == group)
+        X_group = np.asarray(adata.X)[group_mask, :]
+        mean_vals = X_group.mean(axis=0)
         ranks = pd.Series(mean_vals, index=adata.var_names).rank(ascending=False, method='min').astype(int)
 
         rank_col_name = f"ranking_{group}" if len(groups) > 1 else "ranking_all"
@@ -57,7 +75,7 @@ def plot_rank_plot(
         df_plot['offset_rank'] = df_plot['rank'] + offset
 
         alpha = 0.5 if len(groups) > 1 else 1.0
-        ax.plot(df_plot['offset_rank'], df_plot['mean'], label=group, alpha=alpha, color=color)
+        ax.plot(df_plot['offset_rank'], df_plot['mean'], label=group, alpha=alpha, color=color, **kwargs)
 
         if proteins_to_label:
             labeled_df = df_plot[df_plot['protein'].isin(proteins_to_label)]
@@ -84,3 +102,4 @@ def plot_rank_plot(
         return fig
     else:
         plt.show()
+        return None

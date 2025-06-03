@@ -2,38 +2,69 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+from anndata import AnnData
+from typing import Optional, Any
+from matplotlib.figure import Figure
 
-def coefficient_of_variation(adata, group_by):
+def coefficient_of_variation(
+    adata: AnnData,
+    group_by: str,
+    return_fig: bool = False,
+    ax: Optional[Any] = None,
+    **kwargs
+) -> Optional[Figure]:
+    """
+    Plot coefficient of variation (CV) for each group in AnnData.obs[group_by].
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix.
+    group_by : str
+        Column in adata.obs to group by.
+    return_fig : bool, optional
+        If True, returns the matplotlib Figure object for further customization. If False, shows the plot.
+    ax : matplotlib.axes.Axes, optional
+        Axes object to plot on. If None, a new figure and axes are created.
+    **kwargs
+        Additional keyword arguments passed to seaborn.boxplot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure or None
+        The figure object if return_fig is True, otherwise None.
+    """
     adata_copy = adata.copy()
-    assert group_by in adata_copy.obs.columns, f"{group_by} not found in adata.obs"
+    if group_by not in adata_copy.obs.columns:
+        raise ValueError(f"{group_by} not found in adata.obs")
 
-    # Temporary DataFrame to store CV values for plotting
     df_tmp = pd.DataFrame()
-
-    for group in adata.obs[group_by].unique():
-        
-        # Extract group-specific data
+    for group in adata_copy.obs[group_by].unique():
         adata_group = adata_copy[adata_copy.obs[group_by] == group].copy()
-        
-        # Warn if less than 3 samples in the group
-        print(f"this group has {adata_group.shape[0]} samples")
         if adata_group.shape[0] < 3:
             print(f"{group} in dataset has less than 3 samples, leading to poor statistics")
-        
-        # Calculate mean, std, and cv for each feature in the group
-        means = np.mean(adata_group.X, axis=0) #does this ignore NaNs? 
-        stds = np.std(adata_group.X, axis=0)
-        cvs = stds / means  # CV = std / mean
-
-        # Store results in adata_copy.var
+        X_group = np.asarray(adata_group.X)
+        means = np.mean(X_group, axis=0)
+        stds = np.std(X_group, axis=0)
+        cvs = stds / means
         adata_copy.var[f"{group}_mean"] = means
         adata_copy.var[f"{group}_std"] = stds
         adata_copy.var[f"{group}_cv"] = cvs
-
-        # Append to df_tmp for plotting
         group_df = pd.DataFrame({f"{group}_cv": cvs, group_by: group})
         df_tmp = pd.concat([df_tmp, group_df], ignore_index=True)
 
-    # Plot using seaborn
-    df_tmp = df_tmp.melt(id_vars=group_by, var_name='metric', value_name='cv')
-    sns.boxplot(data=df_tmp, y="cv", hue=group_by, width=0.3)
+    df_tmp = df_tmp.melt(id_vars=[group_by], var_name='metric', value_name='cv')
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+    else:
+        fig = ax.figure
+    sns.boxplot(data=df_tmp, y="cv", hue=group_by, width=0.3, ax=ax, **kwargs)
+    ax.set_title(f"Coefficient of Variation by {group_by}")
+    ax.set_ylabel("CV (std/mean)")
+    ax.set_xlabel(group_by)
+    ax.grid(False)
+    if return_fig:
+        return fig
+    else:
+        plt.show()
+        return None
