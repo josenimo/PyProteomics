@@ -1,3 +1,9 @@
+import pandas as pd
+import numpy as np
+import plotly.express as px
+# If you use scanpy, import it here
+import scanpy as sc
+
 def PCA_adata(adata, 
             color:str=None, 
             group_colors:dict=None,
