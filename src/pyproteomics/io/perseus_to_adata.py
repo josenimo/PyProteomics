@@ -1,17 +1,33 @@
-import os
 import sys
-import pandas as pd
-import numpy as np
 import anndata as ad
 import time
 from loguru import logger
+from typing import Optional
 
 datetime = time.strftime("%Y%m%d_%H%M%S")
 
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 
-def perseus_to_anndata(path_to_perseus_txt):
+def perseus_to_anndata(
+    path_to_perseus_txt: str,
+    n_var_metadata_rows: int = 4
+) -> ad.AnnData:
+    """
+    Convert a Perseus text file to an AnnData object.
+
+    Parameters
+    ----------
+    path_to_perseus_txt : str
+        Path to the Perseus text file.
+    n_var_metadata_rows : int, default 4
+        Number of metadata rows at the bottom of the columns to use as var headers.
+
+    Returns
+    -------
+    AnnData
+        AnnData object with imported data.
+    """
     from perseuspy import pd
     df = pd.read_perseus(path_to_perseus_txt)
     # get obs headers
@@ -19,8 +35,8 @@ def perseus_to_anndata(path_to_perseus_txt):
     # get obs contents
     obs = [col for col in df.columns.values] #tuples
     obs = pd.DataFrame(obs)
-    # var headers HARDCODED
-    var_headers = obs.iloc[-4:,0].values.tolist()
+    # var headers configurable
+    var_headers = obs.iloc[-n_var_metadata_rows:,0].values.tolist()
     #remove rows with empty strings
     obs = obs[obs != '']
     obs.dropna(inplace=True)
