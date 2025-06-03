@@ -6,13 +6,38 @@ import anndata as ad
 from loguru import logger
 import seaborn as sns
 import matplotlib.pyplot as plt
+from typing import Optional
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss.SS}</green> | <level>{level}</level> | {message}")
 
-def impute_single(array, mean_shift, std_dev_shift, report_stats=True):
+def impute_single(
+    array: np.ndarray,
+    mean_shift: float = -1.8,
+    std_dev_shift: float = 0.3,
+    report_stats: bool = True
+) -> None:
+    """
+    Impute missing values in a 1D array using a Gaussian distribution in log2 space and plot the result.
+
+    Parameters
+    ----------
+    array : np.ndarray
+        1D array of values to impute (can contain NaNs).
+    mean_shift : float, default -1.8
+        How many standard deviations to shift the mean of the Gaussian distribution.
+    std_dev_shift : float, default 0.3
+        How much to reduce the standard deviation of the Gaussian distribution, as a fraction.
+    report_stats : bool, default True
+        Whether to print statistics about the imputation process.
+
+    Returns
+    -------
+    None
+        This function only plots and logs statistics; it does not return an imputed array.
+    """
     
     array_log2 = np.log2(array)
     mean_log2 = np.nanmean(array_log2)
