@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from adjustText import adjust_text
 
-def plot_volcano_v2(adata, 
+def volcano(adata, 
                     x="log2_FC", 
                     y="-log10(p_val_corr)_BH", 
                     significant=True, 
@@ -10,7 +10,8 @@ def plot_volcano_v2(adata,
                     tag_top=None, 
                     group1=None, 
                     group2=None,
-                    return_fig=False):
+                    return_fig=False,
+                    highlight_genes=None):
     """
     Plot a volcano plot from an AnnData object.
 
@@ -34,6 +35,8 @@ def plot_volcano_v2(adata,
         Name of the second group (used for x-axis label annotation).
     return_fig : bool
         If True, returns the matplotlib `fig` object for further modification.
+    highlight_genes : list or None
+        List of gene names/IDs to highlight and label on the plot, if present in adata.var.index.
 
     Returns
     -------
@@ -82,6 +85,23 @@ def plot_volcano_v2(adata,
             expand_points=(1.2, 1.2),
             arrowprops=dict(arrowstyle="-", color='black', lw=0.5, alpha=0.5)
         )
+
+    # Highlight and label user-specified genes
+    if highlight_genes is not None:
+        highlight_genes_found = [g for g in highlight_genes if g in df.index]
+        if highlight_genes_found:
+            highlight_df = df.loc[highlight_genes_found]
+            ax.scatter(highlight_df[x], highlight_df[y], color="blue", s=40, edgecolor='black', zorder=5)
+            texts_highlight = [
+                ax.text(row[x], row[y], idx, ha='center', va='bottom', fontsize=9, fontweight='bold', color='blue')
+                for idx, row in highlight_df.iterrows()
+            ]
+            adjust_text(
+                texts_highlight,
+                ax=ax,
+                expand_points=(1.2, 1.2),
+                arrowprops=dict(arrowstyle="-", color='blue', lw=0.8, alpha=0.7)
+            )
 
     ax.axvline(x=0, color='black', linestyle='--', linewidth=1, alpha=0.2)
     ax.grid(False)

@@ -9,7 +9,7 @@ from .histogram_w_imputation import histogram_w_imputation
 from .plot_graph_network import plot_graph_network
 from .plotly_boxplots import plot_boxplots_plotly
 from .rankplot import plot_rank_plot
-from .volcano_plot import plot_volcano_v2
+from .volcano import volcano
 
 __all__ = [
     "coefficient_of_variation",
@@ -23,5 +23,5 @@ __all__ = [
     "plot_graph_network",
     "plot_boxplots_plotly",
     "plot_rank_plot",
-    "plot_volcano_v2"
+    "volcano"
 ]
