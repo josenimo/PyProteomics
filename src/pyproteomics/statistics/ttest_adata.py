@@ -11,7 +11,7 @@ import statsmodels.stats.multitest
 # factor in a way that we can test the arrays with different tests
 
 
-def Ttest_adata(adata, grouping, group1, group2, FDR_threshold=0.05):
+def ttest_adata(adata, grouping, group1, group2, FDR_threshold=0.05):
     """
     Created by Jose Nimo on 2023-07-20
     Modified by Jose Nimo on 2023-10-02

@@ -11,7 +11,8 @@ def volcano(adata,
                     group1=None, 
                     group2=None,
                     return_fig=False,
-                    highlight_genes=None):
+                    highlight_genes=None,
+                    show_highlighted_genes_names=True):
     """
     Plot a volcano plot from an AnnData object.
 
@@ -37,6 +38,8 @@ def volcano(adata,
         If True, returns the matplotlib `fig` object for further modification.
     highlight_genes : list or None
         List of gene names/IDs to highlight and label on the plot, if present in adata.var.index.
+    show_highlighted_genes_names : bool
+        If True, shows names of highlighted genes on the plot.
 
     Returns
     -------
@@ -91,17 +94,18 @@ def volcano(adata,
         highlight_genes_found = [g for g in highlight_genes if g in df.index]
         if highlight_genes_found:
             highlight_df = df.loc[highlight_genes_found]
-            ax.scatter(highlight_df[x], highlight_df[y], color="blue", s=40, edgecolor='black', zorder=5)
-            texts_highlight = [
-                ax.text(row[x], row[y], idx, ha='center', va='bottom', fontsize=9, fontweight='bold', color='blue')
-                for idx, row in highlight_df.iterrows()
-            ]
-            adjust_text(
-                texts_highlight,
-                ax=ax,
-                expand_points=(1.2, 1.2),
-                arrowprops=dict(arrowstyle="-", color='blue', lw=0.8, alpha=0.7)
-            )
+            ax.scatter(highlight_df[x], highlight_df[y], color="blue", s=20, edgecolor='black', zorder=5, alpha=0.7)
+            if show_highlighted_genes_names:
+                texts_highlight = [
+                    ax.text(row[x], row[y], idx, ha='center', va='bottom', fontsize=9, fontweight='bold', color='blue')
+                    for idx, row in highlight_df.iterrows()
+                ]
+                adjust_text(
+                    texts_highlight,
+                    ax=ax,
+                    expand_points=(1.2, 1.2),
+                    arrowprops=dict(arrowstyle="-", color='blue', lw=0.8, alpha=0.7)
+                )
 
     ax.axvline(x=0, color='black', linestyle='--', linewidth=1, alpha=0.2)
     ax.grid(False)
