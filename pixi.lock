@@ -2513,7 +2513,7 @@ packages:
 - pypi: .
   name: pyproteomics
   version: 0.1.0
-  sha256: 3392f939bba32a0c5c5b668bc319c7837b043daea26b4e3dbcf8c49c27abe50d
+  sha256: 460d9076f3125490134f83202dd1262346344550c89b48d89c2522792d0c1d1c
   requires_dist:
   - rich>=13.9.4,<14
   - perseuspy>=0.3.9,<0.4
